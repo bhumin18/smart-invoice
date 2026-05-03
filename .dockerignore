@@ -1,0 +1,7 @@
+**/__pycache__/
+**/*.pyc
+**/node_modules/
+**/dist/
+**/.env
+backend/database/db.sqlite3
+backend/outputs/backups/

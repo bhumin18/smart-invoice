@@ -1,0 +1,59 @@
+app:
+  name: Smart Invoice + GST Tool
+  environment: production
+  debug: false
+  secret_key: change-this-secret-key
+
+server:
+  host: 0.0.0.0
+  port: 5000
+
+cors:
+  allow_all: false
+  origins:
+    - https://your-frontend-domain.com
+
+database:
+  engine: sqlite
+  sqlite:
+    path: database/db.sqlite3
+
+outputs:
+  base_dir: outputs
+  invoices_dir: outputs/invoices
+  reports_dir: outputs/reports
+  assets_dir: outputs/assets
+  backups_dir: outputs/backups
+
+email:
+  enabled: false
+  smtp_host: smtp.gmail.com
+  smtp_port: 587
+  use_tls: true
+  username: ""
+  password: ""
+  from_email: ""
+  from_name: Smart Invoice
+
+auth:
+  enabled: true
+  allow_registration: false
+  token_expiry_hours: 24
+  admin_username: admin
+  admin_password: change-this-password
+  admin_email: admin@example.com
+
+logging:
+  level: INFO
+
+tax:
+  max_gst_rate: 28
+  default_supply_type: intrastate
+
+features:
+  auth_enabled: true
+  client_master_enabled: true
+  product_master_enabled: true
+  dashboard_enabled: true
+  email_invoice_enabled: true
+  backup_restore_enabled: true

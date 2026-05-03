@@ -1,0 +1,89 @@
+app:
+  name: Smart Invoice + GST Tool
+  environment: development
+  debug: true
+  secret_key: change-this-secret-key
+
+server:
+  host: 0.0.0.0
+  port: 5000
+
+cors:
+  allow_all: true
+  origins:
+    - http://localhost:5173
+    - http://127.0.0.1:5173
+
+database:
+  # Active engine. Current production-ready adapter is sqlite.
+  # Supported config profiles: sqlite, postgresql, mysql, mongodb.
+  engine: sqlite
+
+  sqlite:
+    path: database/db.sqlite3
+
+  postgresql:
+    host: localhost
+    port: 5432
+    database: smart_invoice
+    username: postgres
+    password: ""
+    url: postgresql+psycopg2://postgres:password@localhost:5432/smart_invoice
+
+  mysql:
+    host: localhost
+    port: 3306
+    database: smart_invoice
+    username: root
+    password: ""
+    url: mysql+pymysql://root:password@localhost:3306/smart_invoice
+
+  mongodb:
+    host: localhost
+    port: 27017
+    database: smart_invoice
+    username: ""
+    password: ""
+    uri: mongodb://localhost:27017/smart_invoice
+
+outputs:
+  base_dir: outputs
+  invoices_dir: outputs/invoices
+  reports_dir: outputs/reports
+  assets_dir: outputs/assets
+  backups_dir: outputs/backups
+
+email:
+  enabled: false
+  smtp_host: smtp.gmail.com
+  smtp_port: 587
+  use_tls: true
+  username: ""
+  password: ""
+  from_email: ""
+  from_name: Smart Invoice
+
+auth:
+  enabled: true
+  allow_registration: true
+  token_expiry_hours: 24
+  admin_username: admin
+  # Default password for local development is admin123.
+  # Change this before sharing/deployment. Environment variable ADMIN_PASSWORD overrides it.
+  admin_password: admin123
+  admin_email: admin@example.com
+
+logging:
+  level: INFO
+
+tax:
+  max_gst_rate: 28
+  default_supply_type: intrastate
+
+features:
+  auth_enabled: true
+  client_master_enabled: true
+  product_master_enabled: true
+  dashboard_enabled: true
+  email_invoice_enabled: true
+  backup_restore_enabled: true

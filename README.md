@@ -1,0 +1,329 @@
+# Smart Invoice + GST Tool India
+
+Production-ready full-stack invoicing and GST management app for Indian freelancers, agencies, and small businesses.
+
+![Dashboard Preview](docs/images/dashboard-preview.svg)
+
+## Highlights
+
+- Multi-user account system with admin-controlled permissions
+- Per-user company profile, logo, authorized signature, invoice prefix, and numbering
+- GST invoice creation with intrastate CGST/SGST and interstate IGST support
+- Professional Zoho-style PDF invoices
+- PDF preview before download
+- Payment recording with receipt PDF generation
+- Client master and product/service master
+- Invoice workflow: draft, sent, paid, partially paid, overdue, void
+- Search and filters by invoice number, client, status, and dates
+- GST Excel reports with CGST, SGST, IGST, and summary sheets
+- Email invoice PDF through SMTP
+- Full backup, restore, Excel export, and JSON export
+- YAML-based configuration
+- Docker setup for local deployment
+- SQLite today, with SQLAlchemy migration scaffold for PostgreSQL/MySQL
+
+## Example Screens
+
+### Invoice PDF
+
+![Invoice Preview](docs/images/invoice-preview.svg)
+
+### Users and Permissions
+
+![Users Preview](docs/images/users-preview.svg)
+
+## Tech Stack
+
+### Backend
+
+- Python 3.10+
+- Flask
+- SQLite
+- Pandas
+- ReportLab
+- OpenPyXL
+- PyYAML
+- SQLAlchemy scaffold for future PostgreSQL/MySQL migration
+
+### Frontend
+
+- React
+- TanStack Router
+- TanStack Query
+- Vite
+- Tailwind-style component system
+- Lucide icons
+
+## Project Structure
+
+```text
+smart-invoice/
+├── backend/
+│   ├── app.py
+│   ├── config.yaml
+│   ├── config.production.yaml
+│   ├── database/
+│   ├── models/
+│   ├── routes/
+│   ├── services/
+│   ├── utils/
+│   ├── outputs/
+│   └── requirements.txt
+├── frontend/
+│   └── gst-gem-main/
+│       ├── src/
+│       ├── package.json
+│       └── vite.config.ts
+├── docs/
+│   └── images/
+├── docker-compose.yml
+└── README.md
+```
+
+## Quick Start
+
+### Backend
+
+```powershell
+cd backend
+pip install -r requirements.txt
+python app.py
+```
+
+Backend runs at:
+
+```text
+http://localhost:5000
+```
+
+Health check:
+
+```text
+http://localhost:5000/api/health
+```
+
+### Frontend
+
+```powershell
+cd frontend/gst-gem-main
+npm install
+npm run dev
+```
+
+Frontend uses:
+
+```text
+VITE_API_BASE=http://localhost:5000/api
+```
+
+Set this in `frontend/gst-gem-main/.env` for another backend URL.
+
+## Default Login
+
+```text
+username: admin
+password: admin123
+```
+
+Change this before deployment:
+
+```yaml
+auth:
+  admin_username: admin
+  admin_password: change-this-password
+  admin_email: admin@example.com
+```
+
+## Multi-User Behavior
+
+- Normal users see only their own invoices, clients, products, dashboard, GST reports, and company settings.
+- Admins can see all users' invoices, clients, and products.
+- Admins can manage user roles and permissions from the Users page.
+- Each user has a separate company profile, logo, signature, invoice prefix, and numbering series.
+- User A and User B can both have `INV-0001` because invoice numbering is scoped per user.
+
+## Permissions
+
+Admins can control:
+
+- User active/inactive state
+- Role: `admin` or `user`
+- Create invoice permission
+- Manage company permission
+- Export data permission
+
+## Configuration
+
+Runtime settings are centralized in:
+
+```text
+backend/config.yaml
+backend/config.py
+backend/.env.example
+```
+
+Important environment overrides:
+
+```text
+APP_HOST=0.0.0.0
+APP_PORT=5000
+APP_DEBUG=false
+SECRET_KEY=change-this-secret-key
+AUTH_ENABLED=true
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=change-this-password
+DATABASE_ENGINE=sqlite
+SQLITE_DATABASE_PATH=database/db.sqlite3
+```
+
+## Email Setup
+
+Email is disabled by default. To enable invoice email sending:
+
+```yaml
+email:
+  enabled: true
+  smtp_host: smtp.gmail.com
+  smtp_port: 587
+  use_tls: true
+  username: your@email.com
+  password: your-app-password
+  from_email: your@email.com
+  from_name: Smart Invoice
+```
+
+For Gmail, use an app password.
+
+## Docker
+
+```powershell
+docker compose up --build
+```
+
+Services:
+
+```text
+Backend:  http://localhost:5000
+Frontend: http://localhost:3000
+```
+
+Before production use, change:
+
+```text
+ADMIN_PASSWORD
+SECRET_KEY
+cors.origins
+email settings
+```
+
+## API Overview
+
+```text
+POST            /api/auth/login
+GET             /api/auth/me
+POST            /api/auth/register
+POST            /api/auth/forgot-password
+POST            /api/auth/reset-password
+POST            /api/auth/change-password
+
+GET             /api/users
+PUT             /api/users/<id>
+
+GET/POST        /api/invoices
+GET/PUT/DELETE  /api/invoices/<id>
+GET             /api/invoices/next-number
+GET             /api/invoices/<id>/pdf
+POST            /api/invoices/<id>/email
+POST            /api/invoices/<id>/void
+POST            /api/invoices/<id>/clone
+POST            /api/invoices/<id>/payments
+GET             /api/invoices/<id>/payments/<payment_id>/receipt
+
+GET/POST        /api/clients
+GET/PUT/DELETE  /api/clients/<id>
+
+GET/POST        /api/products
+GET/PUT/DELETE  /api/products/<id>
+
+GET/POST        /api/company
+POST            /api/company/logo
+POST            /api/company/signature
+
+GET             /api/dashboard/summary
+GET             /api/reports/gst?month=5&year=2026
+GET             /api/backups/export
+POST            /api/backups/restore
+GET             /api/exports/data?format=xlsx
+GET             /api/exports/data?format=json
+GET             /api/config/public
+GET             /api/health
+```
+
+## Database
+
+Current active adapter:
+
+```text
+SQLite
+```
+
+The app includes configuration profiles for:
+
+- SQLite
+- PostgreSQL
+- MySQL
+- MongoDB
+
+SQLite is the current working adapter because the model layer uses Python `sqlite3`. PostgreSQL/MySQL migration should use the SQLAlchemy scaffold:
+
+```text
+backend/database/sqlalchemy_adapter.py
+backend/database/MIGRATION.md
+```
+
+## Data Export and Backup
+
+Available from the Reports page:
+
+- GST Excel report
+- Full Excel export
+- Full JSON export
+- Full backup zip
+- Backup restore
+
+Runtime outputs are intentionally ignored from Git:
+
+```text
+backend/database/db.sqlite3
+backend/outputs/
+```
+
+## Verification Checklist
+
+- Login as admin
+- Create a new user
+- Confirm admin can change permissions
+- Login as the new user
+- Set company profile and invoice prefix
+- Create invoice with GST
+- Preview invoice PDF
+- Download invoice PDF
+- Record payment
+- Download receipt PDF
+- Generate GST report
+- Export Excel/JSON data
+- Download backup zip
+
+## Production Notes
+
+- Use a strong `SECRET_KEY`
+- Change admin password immediately
+- Disable open registration if public access is not intended
+- Configure exact CORS origins
+- Use HTTPS in production
+- Prefer PostgreSQL for hosted multi-user deployment after migrating the repository layer
+- Do not commit SQLite database, generated PDFs, uploaded logos, or backup zips
+
+## Developer Signature
+
+Developed by [Bhumin Paladiya](https://www.linkedin.com/in/bhumin-paladiya).

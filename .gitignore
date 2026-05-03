@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Backend runtime data
+backend/database/*.sqlite3
+backend/database/*.db
+backend/outputs/
+!backend/outputs/
+!backend/outputs/.gitkeep
+backend/outputs/*
+!backend/outputs/.gitkeep
+
+# Environment / secrets
+.env
+*.local
+backend/.env
+frontend/gst-gem-main/.env
+
+# Node / frontend build
+frontend/gst-gem-main/node_modules/
+frontend/gst-gem-main/dist/
+frontend/gst-gem-main/.tanstack/
+frontend/gst-gem-main/.wrangler/
+
+# Logs and OS
+*.log
+Thumbs.db
+.DS_Store
