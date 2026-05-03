@@ -28,15 +28,15 @@ import { api } from "@/lib/api";
 import { FALLBACK_BRANDING } from "@/lib/app-signature";
 
 const items = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Create Invoice", url: "/invoices/new", icon: FilePlus2 },
-  { title: "Invoices", url: "/invoices", icon: FileText },
-  { title: "Clients", url: "/clients", icon: Users },
-  { title: "Products", url: "/products", icon: PackageSearch },
-  { title: "Users", url: "/users", icon: ShieldCheck },
-  { title: "GST Report", url: "/reports", icon: BarChart3 },
-  { title: "Company", url: "/company", icon: Building2 },
-];
+  { title: "Dashboard", url: "/", icon: LayoutDashboard, permission: "always" },
+  { title: "Create Invoice", url: "/invoices/new", icon: FilePlus2, permission: "canCreateInvoices" },
+  { title: "Invoices", url: "/invoices", icon: FileText, permission: "always" },
+  { title: "Clients", url: "/clients", icon: Users, permission: "canCreateInvoices" },
+  { title: "Products", url: "/products", icon: PackageSearch, permission: "canCreateInvoices" },
+  { title: "Users", url: "/users", icon: ShieldCheck, permission: "admin" },
+  { title: "GST Report", url: "/reports", icon: BarChart3, permission: "canExportData" },
+  { title: "Company", url: "/company", icon: Building2, permission: "canManageCompany" },
+] as const;
 
 export function AppSidebar() {
   const { state } = useSidebar();
@@ -48,8 +48,21 @@ export function AppSidebar() {
     retry: false,
     staleTime: 5 * 60 * 1000,
   });
+  const { data: currentUser } = useQuery({
+    queryKey: ["current-user"],
+    queryFn: api.currentUser,
+    retry: false,
+    staleTime: 60 * 1000,
+  });
   const branding = backendBranding || FALLBACK_BRANDING;
   const isActive = (url: string) => (url === "/" ? path === "/" : path.startsWith(url));
+  const user = currentUser?.user;
+  const visibleItems = items.filter((item) => {
+    if (item.permission === "always") return true;
+    if (item.permission === "admin") return user?.role === "admin";
+    if (user?.role === "admin") return true;
+    return Boolean(user?.[item.permission]);
+  });
 
   return (
     <Sidebar collapsible="icon">
@@ -71,7 +84,7 @@ export function AppSidebar() {
           <SidebarGroupLabel>Workspace</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map((item) => (
+              {visibleItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
                     <Link to={item.url} className="flex items-center gap-2">

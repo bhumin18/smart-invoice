@@ -35,6 +35,20 @@ function UsersPage() {
     onError: (e: Error) => toast.error(e.message),
   });
   const users = Array.isArray(data) ? data : [];
+  if (error) {
+    return (
+      <div className="mx-auto max-w-3xl">
+        <Card>
+          <CardHeader>
+            <CardTitle>Users & Permissions</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground">
+            {(error as Error).message}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   function patch(user: AppUser, patchValue: Partial<AppUser>) {
     save.mutate({ ...user, ...patchValue });

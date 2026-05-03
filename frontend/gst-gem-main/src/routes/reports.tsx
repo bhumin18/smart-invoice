@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { api, formatINR } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,14 @@ function ReportsPage() {
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [year, setYear] = useState(now.getFullYear());
+  const { data: currentUser } = useQuery({
+    queryKey: ["current-user"],
+    queryFn: api.currentUser,
+    retry: false,
+    staleTime: 60 * 1000,
+  });
+  const canExportData =
+    currentUser?.user.role === "admin" || Boolean(currentUser?.user.canExportData);
 
   const m = useMutation({
     mutationFn: () => api.gstReport(month, year),
@@ -106,49 +114,51 @@ function ReportsPage() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Backup & Restore</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3 md:flex-row md:items-center">
-          <Button variant="outline" onClick={() => exportData.mutate("xlsx")} disabled={exportData.isPending}>
-            <DatabaseBackup className="h-4 w-4" />
-            Export Excel
-          </Button>
-          <Button variant="outline" onClick={() => exportData.mutate("json")} disabled={exportData.isPending}>
-            <DatabaseBackup className="h-4 w-4" />
-            Export JSON
-          </Button>
-          <Button variant="outline" onClick={() => backup.mutate()} disabled={backup.isPending}>
-            <DatabaseBackup className="h-4 w-4" />
-            {backup.isPending ? "Preparing..." : "Download Full Backup"}
-          </Button>
-          <div>
-            <Input
-              id="backup-restore"
-              type="file"
-              accept=".zip"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) restore.mutate(file);
-              }}
-            />
-            <Button
-              type="button"
-              variant="outline"
-              disabled={restore.isPending}
-              onClick={() => document.getElementById("backup-restore")?.click()}
-            >
-              <Upload className="h-4 w-4" />
-              {restore.isPending ? "Restoring..." : "Restore Backup Zip"}
+      {canExportData && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Backup & Restore</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3 md:flex-row md:items-center">
+            <Button variant="outline" onClick={() => exportData.mutate("xlsx")} disabled={exportData.isPending}>
+              <DatabaseBackup className="h-4 w-4" />
+              Export Excel
             </Button>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Restore replaces local SQLite/output data. Restart backend after restore.
-          </p>
-        </CardContent>
-      </Card>
+            <Button variant="outline" onClick={() => exportData.mutate("json")} disabled={exportData.isPending}>
+              <DatabaseBackup className="h-4 w-4" />
+              Export JSON
+            </Button>
+            <Button variant="outline" onClick={() => backup.mutate()} disabled={backup.isPending}>
+              <DatabaseBackup className="h-4 w-4" />
+              {backup.isPending ? "Preparing..." : "Download Full Backup"}
+            </Button>
+            <div>
+              <Input
+                id="backup-restore"
+                type="file"
+                accept=".zip"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) restore.mutate(file);
+                }}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                disabled={restore.isPending}
+                onClick={() => document.getElementById("backup-restore")?.click()}
+              >
+                <Upload className="h-4 w-4" />
+                {restore.isPending ? "Restoring..." : "Restore Backup Zip"}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Restore replaces local SQLite/output data. Restart backend after restore.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {data && (
         <>

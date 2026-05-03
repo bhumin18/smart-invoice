@@ -8,8 +8,10 @@ from typing import Any
 from flask import send_file
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
 from reportlab.lib.utils import ImageReader
+from reportlab.platypus import Paragraph, Table, TableStyle
 from reportlab.pdfgen import canvas
 
 from models.company_model import get_company
@@ -264,59 +266,99 @@ def _draw_invoice_meta(pdf: canvas.Canvas, invoice: dict[str, Any]) -> None:
 
 
 def _draw_items(pdf: canvas.Canvas, invoice: dict[str, Any]) -> float:
-    """Draw the item table and return the y position below it."""
-    table_x = LEFT
+    """Draw a wrapped item table and return the y position below it."""
     table_w = RIGHT - LEFT
-    y = PAGE_HEIGHT - 124 * mm
-    header_h = 26
-    cols = [10 * mm, 98 * mm, 18 * mm, 23 * mm, 23 * mm]
-    x = [table_x]
-    for width in cols[:-1]:
-        x.append(x[-1] + width)
+    start_y = PAGE_HEIGHT - 124 * mm
+    bottom_margin = 78 * mm
+    col_widths = [10 * mm, 90 * mm, 18 * mm, 22 * mm, 20 * mm, table_w - (10 + 90 + 18 + 22 + 20) * mm]
+    item_style = ParagraphStyle(
+        "InvoiceItem",
+        fontName="Helvetica-Bold",
+        fontSize=8.8,
+        leading=10.5,
+        textColor=INK,
+        spaceAfter=2,
+    )
+    meta_style = ParagraphStyle(
+        "InvoiceItemMeta",
+        fontName="Helvetica",
+        fontSize=7.8,
+        leading=9.2,
+        textColor=MUTED,
+    )
 
-    pdf.setFillColor(HEADER)
-    pdf.rect(table_x, y - header_h, table_w, header_h, stroke=0, fill=1)
-    headers = ["#", "Item & Description", "Qty", "Rate", "Amount"]
-    pdf.setFillColor(colors.white)
-    pdf.setFont("Helvetica", 9)
-    for index, header in enumerate(headers):
-        if index in {0, 2, 3, 4}:
-            pdf.drawRightString(x[index] + cols[index] - 8, y - 17, header)
-        else:
-            pdf.drawString(x[index] + 8, y - 17, header)
+    def item_description(item: dict[str, Any]) -> Paragraph:
+        meta_parts = []
+        if _clean(item.get("description")):
+            meta_parts.append(_clean(item.get("description")))
+        if _clean(item.get("hsn_sac")):
+            meta_parts.append(f"HSN/SAC: {_clean(item.get('hsn_sac'))}")
+        if float(item.get("gst_rate", 0)):
+            meta_parts.append(f"GST: {float(item.get('gst_rate', 0)):g}%")
+        body = Paragraph(_clean(item.get("item_name", "")), item_style).getPlainText()
+        meta = "<br/>".join(meta_parts)
+        html = body.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        if meta:
+            html += "<br/><font name='Helvetica' size='7.8' color='#666666'>" + meta.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;") + "</font>"
+        return Paragraph(html, item_style)
 
-    y -= header_h
+    rows: list[list[Any]] = [["#", "Item & Description", "Qty", "Rate", "GST", "Amount"]]
     for index, item in enumerate(invoice.get("items", []), start=1):
-        row_h = 38
-        if y - row_h < 78 * mm:
+        rows.append(
+            [
+                str(index),
+                item_description(item),
+                f"{float(item.get('quantity', 0)):g}",
+                _currency_number(float(item.get("price", 0))),
+                _currency_number(float(item.get("line_gst", 0))),
+                _currency_number(float(item.get("line_total", 0))),
+            ]
+        )
+
+    table = Table(rows, colWidths=col_widths, repeatRows=1)
+    table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), HEADER),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica"),
+                ("FONTSIZE", (0, 0), (-1, 0), 8.5),
+                ("ALIGN", (0, 0), (0, -1), "RIGHT"),
+                ("ALIGN", (2, 0), (-1, -1), "RIGHT"),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("BOTTOMPADDING", (0, 0), (-1, 0), 9),
+                ("TOPPADDING", (0, 0), (-1, 0), 9),
+                ("TOPPADDING", (0, 1), (-1, -1), 8),
+                ("BOTTOMPADDING", (0, 1), (-1, -1), 8),
+                ("LINEBELOW", (0, 0), (-1, 0), 0.5, LINE),
+                ("LINEBELOW", (0, 1), (-1, -1), 0.35, LINE),
+                ("LEFTPADDING", (0, 0), (-1, -1), 6),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+                ("FONTNAME", (0, 1), (0, -1), "Helvetica"),
+                ("FONTNAME", (2, 1), (-1, -1), "Helvetica"),
+                ("FONTSIZE", (0, 1), (-1, -1), 8.5),
+            ]
+        )
+    )
+
+    y = start_y
+    remaining = table
+    while remaining:
+        available_height = y - bottom_margin
+        pieces = remaining.split(table_w, available_height)
+        if not pieces:
             pdf.showPage()
             y = TOP
-        pdf.setFillColor(INK)
-        pdf.setFont("Helvetica", 9)
-        pdf.drawRightString(x[0] + cols[0] - 8, y - 17, str(index))
-        desc_y = y - 15
-        pdf.setFont("Helvetica-Bold", 9)
-        pdf.drawString(x[1] + 8, desc_y, _clean(item.get("item_name", ""))[:45])
-        if _clean(item.get("description")):
-            pdf.setFont("Helvetica", 8)
-            pdf.setFillColor(MUTED)
-            pdf.drawString(x[1] + 8, desc_y - 11, _clean(item.get("description"))[:45])
-        elif _clean(item.get("hsn_sac")):
-            pdf.setFont("Helvetica", 8)
-            pdf.setFillColor(MUTED)
-            pdf.drawString(x[1] + 8, desc_y - 11, f"HSN/SAC: {_clean(item.get('hsn_sac'))}")
-        pdf.setFillColor(INK)
-        pdf.setFont("Helvetica", 9)
-        pdf.drawRightString(x[2] + cols[2] - 8, y - 17, f"{float(item.get('quantity', 0)):.2f}")
-        pdf.setFont("Helvetica", 8)
-        pdf.setFillColor(MUTED)
-        pdf.drawRightString(x[2] + cols[2] - 8, y - 29, "box")
-        _right(pdf, _currency_number(float(item.get("price", 0))), x[3] + cols[3] - 8, y - 17, size=9)
-        _right(pdf, _currency_number(float(item.get("line_total", 0))), x[4] + cols[4] - 8, y - 17, size=9)
-        y -= row_h
+            continue
+        chunk = pieces[0]
+        width, height = chunk.wrapOn(pdf, table_w, available_height)
+        chunk.drawOn(pdf, LEFT, y - height)
+        y -= height
+        remaining = pieces[1] if len(pieces) > 1 else None
+        if remaining:
+            pdf.showPage()
+            y = TOP
 
-    pdf.setStrokeColor(LINE)
-    pdf.line(table_x, y, table_x + table_w, y)
     return y - 12
 
 
@@ -420,6 +462,9 @@ def generate_invoice_pdf(invoice: dict[str, Any]) -> str:
     _draw_bill_to(pdf, invoice)
     _draw_invoice_meta(pdf, invoice)
     y = _draw_items(pdf, invoice)
+    if y < 132 * mm:
+        pdf.showPage()
+        y = TOP
     _draw_totals(pdf, invoice, symbol, y)
     _draw_notes_and_signature(pdf, invoice)
     _draw_footer(pdf)

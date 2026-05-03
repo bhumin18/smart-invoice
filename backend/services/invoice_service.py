@@ -18,6 +18,7 @@ from models.invoice_model import (
 )
 from services.numbering_service import get_next_invoice_number, sync_invoice_number
 from services.auth_service import require_permission
+from services.audit_service import record_audit
 from utils.auth_context import is_admin, user_scope
 from utils.helpers import ValidationError, calculate_invoice_totals, calculate_item_totals, now_iso, parse_date
 
@@ -128,6 +129,14 @@ def create_invoice(payload: dict[str, Any], current_user: dict[str, Any] | None 
     invoice, calculated_items = build_invoice_payload(payload)
     saved = insert_invoice(invoice, calculated_items)
     sync_invoice_number(str(saved.get("invoice_number", "")), current_user.get("id"))
+    record_audit(
+        "created",
+        "invoice",
+        int(saved.get("id")),
+        current_user,
+        {"invoice_number": saved.get("invoice_number"), "total": saved.get("total")},
+        owner_user_id=current_user.get("id"),
+    )
     logger.info("Created invoice %s", saved.get("invoice_number"))
     return saved
 
@@ -147,6 +156,14 @@ def update_invoice(invoice_id: int, payload: dict[str, Any], current_user: dict[
     invoice["owner_user_id"] = current.get("owner_user_id")
     updated = replace_invoice(invoice_id, invoice, calculated_items)
     if updated:
+        record_audit(
+            "updated",
+            "invoice",
+            invoice_id,
+            current_user,
+            {"invoice_number": updated.get("invoice_number"), "total": updated.get("total")},
+            owner_user_id=updated.get("owner_user_id"),
+        )
         logger.info("Updated invoice %s", updated.get("invoice_number"))
     return updated
 
@@ -171,6 +188,14 @@ def clone_invoice(invoice_id: int, current_user: dict[str, Any] | None = None) -
         "items": current.get("items", []),
     }
     cloned = create_invoice(clone_payload, current_user)
+    record_audit(
+        "cloned_from",
+        "invoice",
+        int(cloned.get("id")),
+        current_user,
+        {"source_invoice_id": invoice_id, "source_invoice_number": current.get("invoice_number")},
+        owner_user_id=cloned.get("owner_user_id"),
+    )
     logger.info("Cloned invoice %s to %s", current.get("invoice_number"), cloned.get("invoice_number"))
     return cloned
 
@@ -191,6 +216,14 @@ def void_invoice(invoice_id: int, reason: str = "", current_user: dict[str, Any]
     }
     updated = replace_invoice(invoice_id, invoice, current.get("items", []))
     if updated:
+        record_audit(
+            "voided",
+            "invoice",
+            invoice_id,
+            current_user,
+            {"invoice_number": updated.get("invoice_number"), "reason": reason.strip()},
+            owner_user_id=updated.get("owner_user_id"),
+        )
         logger.info("Voided invoice %s", updated.get("invoice_number"))
     return updated
 
@@ -230,6 +263,14 @@ def record_payment(
         invoice.get("items", []),
     )
     if updated:
+        record_audit(
+            "payment_recorded",
+            "invoice",
+            invoice_id,
+            current_user,
+            {"amount": round(float(amount), 2), "payment_date": payment_date, "mode": mode.strip() or "Bank Transfer"},
+            owner_user_id=updated.get("owner_user_id"),
+        )
         logger.info("Recorded payment for invoice %s", updated.get("invoice_number"))
     return updated
 
@@ -237,8 +278,17 @@ def record_payment(
 def remove_invoice(invoice_id: int, current_user: dict[str, Any] | None = None) -> bool:
     """Delete an invoice."""
     scope = user_scope(current_user)
+    current = get_invoice_by_id(invoice_id, **scope)
     deleted = delete_invoice(invoice_id, **scope)
     if deleted:
+        record_audit(
+            "deleted",
+            "invoice",
+            invoice_id,
+            current_user,
+            {"invoice_id": invoice_id, "invoice_number": (current or {}).get("invoice_number")},
+            owner_user_id=(current or {}).get("owner_user_id") or scope.get("owner_user_id"),
+        )
         logger.info("Deleted invoice id=%s", invoice_id)
     return deleted
 

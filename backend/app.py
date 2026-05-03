@@ -8,7 +8,8 @@ from flask import Flask, g, request
 from flask_cors import CORS
 
 from branding import DEVELOPER_SIGNATURE, branding_payload, console_banner
-from config import APP_DEBUG, CORS_ALLOW_ALL, CORS_ORIGINS, SERVER_HOST, SERVER_PORT, get_public_config
+from config import APP_DEBUG, CORS_ALLOW_ALL, CORS_ORIGINS, SERVER_HOST, SERVER_PORT, get_public_config, validate_runtime_config
+from models.audit_model import create_audit_table
 from models.client_model import create_client_table
 from models.company_model import create_company_table
 from models.invoice_model import create_invoice_tables
@@ -36,11 +37,13 @@ def init_database() -> None:
     create_invoice_tables()
     create_client_table()
     create_product_table()
+    create_audit_table()
 
 
 def create_app() -> Flask:
     """Create and configure the Flask application."""
     setup_logging()
+    validate_runtime_config()
     init_database()
     logging.info(console_banner())
     print(console_banner())

@@ -152,6 +152,16 @@ export type AppUser = {
   canExportData: boolean;
 };
 
+export type AuditLog = {
+  id: number;
+  action: string;
+  entityType: string;
+  entityId?: number;
+  actorUsername?: string;
+  details: Record<string, unknown>;
+  createdAt: string;
+};
+
 function normalizeItem(item: any): InvoiceItem {
   return {
     name: item.item_name ?? item.name ?? "",
@@ -367,6 +377,18 @@ function normalizeUser(user: any): AppUser {
   };
 }
 
+function normalizeAuditLog(log: any): AuditLog {
+  return {
+    id: Number(log.id ?? 0),
+    action: log.action ?? "",
+    entityType: log.entity_type ?? log.entityType ?? "",
+    entityId: log.entity_id ?? log.entityId,
+    actorUsername: log.actor_username ?? log.actorUsername ?? "",
+    details: log.details && typeof log.details === "object" ? log.details : {},
+    createdAt: log.created_at ?? log.createdAt ?? "",
+  };
+}
+
 function userPayload(user: AppUser) {
   return {
     role: user.role,
@@ -545,6 +567,10 @@ export const api = {
         message: data.message ?? "",
       }),
     }),
+  getInvoiceAudit: async (id: string) => {
+    const logs = await request<any[]>(`/invoices/${id}/audit`);
+    return logs.map(normalizeAuditLog);
+  },
   nextInvoiceNumber: async () => {
     const data = await request<{ invoice_number: string }>("/invoices/next-number");
     return data.invoice_number;

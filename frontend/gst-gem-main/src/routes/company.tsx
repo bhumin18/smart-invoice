@@ -71,6 +71,12 @@ const demoCompany: Company = {
 function CompanyPage() {
   const qc = useQueryClient();
   const { data, isLoading } = useQuery({ queryKey: ["company"], queryFn: api.getCompany });
+  const { data: currentUser } = useQuery({
+    queryKey: ["current-user"],
+    queryFn: api.currentUser,
+    retry: false,
+    staleTime: 60 * 1000,
+  });
   const [form, setForm] = useState<Company>(emptyCompany);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -127,6 +133,24 @@ function CompanyPage() {
   function useDemoProfile() {
     setForm(demoCompany);
     toast.success("Demo company profile filled. Save when ready.");
+  }
+
+  const canManageCompany =
+    currentUser?.user.role === "admin" || Boolean(currentUser?.user.canManageCompany);
+
+  if (currentUser && !canManageCompany) {
+    return (
+      <div className="mx-auto max-w-3xl">
+        <Card>
+          <CardHeader>
+            <CardTitle>Company Settings</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground">
+            You do not have permission to manage company settings.
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (

@@ -104,14 +104,28 @@ def forgot_password(payload: dict[str, Any]) -> dict[str, Any]:
     if user is None:
         return {"sent": True}
     token = secrets.token_urlsafe(32)
-    expires_at = (datetime.now(timezone.utc) + timedelta(minutes=30)).isoformat()
+    expiry_minutes = int(get_config("auth.password_reset_token_minutes", 30))
+    expires_at = (datetime.now(timezone.utc) + timedelta(minutes=expiry_minutes)).isoformat()
     set_reset_token(int(user["id"]), token, expires_at)
-    return {
-        "sent": True,
-        "reset_token": token,
-        "expires_at": expires_at,
-        "note": "Email delivery for reset links can be added later; token is returned for local admin use.",
-    }
+    reset_base = str(get_config("auth.password_reset_url", "http://localhost:5173")).rstrip("/")
+    reset_link = f"{reset_base}?reset_token={token}"
+    email_enabled = bool(get_config("email.enabled", False))
+    if email_enabled:
+        from services.email_service import send_password_reset_email
+
+        send_password_reset_email(user, reset_link)
+        return {"sent": True, "expires_at": expires_at}
+
+    result = {"sent": True, "expires_at": expires_at}
+    if str(get_config("app.environment", "development")).lower() != "production":
+        result.update(
+            {
+                "reset_token": token,
+                "reset_link": reset_link,
+                "note": "Development mode only: configure SMTP to email reset links and hide tokens.",
+            }
+        )
+    return result
 
 
 def reset_password(payload: dict[str, Any]) -> dict[str, Any]:

@@ -78,6 +78,12 @@ function NewInvoice() {
     queryKey: ["products", "active"],
     queryFn: () => api.listProducts("", true),
   });
+  const { data: currentUser } = useQuery({
+    queryKey: ["current-user"],
+    queryFn: api.currentUser,
+    retry: false,
+    staleTime: 60 * 1000,
+  });
   const [invoiceNumber, setInvoiceNumber] = useState("");
   const [invoiceDate, setInvoiceDate] = useState(today());
   const [dueDate, setDueDate] = useState(addDays(15));
@@ -221,6 +227,24 @@ function NewInvoice() {
       gstAmount,
       total,
     });
+  }
+
+  const canCreateInvoices =
+    currentUser?.user.role === "admin" || Boolean(currentUser?.user.canCreateInvoices);
+
+  if (currentUser && !canCreateInvoices) {
+    return (
+      <div className="mx-auto max-w-3xl">
+        <Card>
+          <CardHeader>
+            <CardTitle>Create Invoice</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground">
+            You do not have permission to create invoices.
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   if (createdInvoice) {

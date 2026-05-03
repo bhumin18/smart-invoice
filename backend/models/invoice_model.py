@@ -135,7 +135,7 @@ def create_invoice_tables() -> None:
             CREATE TABLE IF NOT EXISTS invoices (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 owner_user_id INTEGER,
-                invoice_number TEXT NOT NULL UNIQUE,
+                invoice_number TEXT NOT NULL,
                 client_name TEXT NOT NULL,
                 client_gstin TEXT,
                 client_address TEXT,

@@ -72,3 +72,45 @@ def send_invoice_email(invoice: dict[str, Any], payload: dict[str, Any]) -> dict
 
     logger.info("Emailed invoice %s to %s", invoice.get("invoice_number"), to_email)
     return {"to_email": to_email, "subject": subject, "attachment": pdf_path.name}
+
+
+def send_password_reset_email(user: dict[str, Any], reset_link: str) -> dict[str, Any]:
+    """Email a password reset link to a user."""
+    config = _email_config()
+    if not bool(config.get("enabled")):
+        raise ValidationError({"email": "Email is disabled. Enable email.enabled in backend/config.yaml."})
+
+    to_email = str(user.get("email") or "").strip()
+    if not to_email or "@" not in to_email:
+        raise ValidationError({"email": "User does not have a valid email address"})
+
+    from_email = str(config.get("from_email") or config.get("username") or "").strip()
+    if not from_email:
+        raise ValidationError({"from_email": "SMTP from_email or username is not configured"})
+
+    email = EmailMessage()
+    email["Subject"] = "Reset your Smart Invoice password"
+    email["From"] = f"{config.get('from_name') or 'Smart Invoice'} <{from_email}>"
+    email["To"] = to_email
+    email.set_content(
+        "We received a request to reset your Smart Invoice password.\n\n"
+        f"Open this link to set a new password:\n{reset_link}\n\n"
+        "If you did not request this, you can ignore this email."
+    )
+
+    host = str(config.get("smtp_host") or "").strip()
+    port = int(config.get("smtp_port") or 587)
+    username = str(config.get("username") or "").strip()
+    password = str(config.get("password") or "")
+    if not host:
+        raise ValidationError({"smtp_host": "SMTP host is not configured"})
+
+    with smtplib.SMTP(host, port, timeout=30) as smtp:
+        if bool(config.get("use_tls", True)):
+            smtp.starttls()
+        if username:
+            smtp.login(username, password)
+        smtp.send_message(email)
+
+    logger.info("Sent password reset email to user id=%s", user.get("id"))
+    return {"to_email": to_email}

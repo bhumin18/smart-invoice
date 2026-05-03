@@ -18,6 +18,8 @@ Production-ready full-stack invoicing and GST management app for Indian freelanc
 - GST Excel reports with CGST, SGST, IGST, and summary sheets
 - Email invoice PDF through SMTP
 - Full backup, restore, Excel export, and JSON export
+- Invoice audit history for create, edit, payment, void, clone, and delete activity
+- Automated backend regression tests with pytest
 - YAML-based configuration
 - Docker setup for local deployment
 - SQLite today, with SQLAlchemy migration scaffold for PostgreSQL/MySQL
@@ -231,6 +233,7 @@ PUT             /api/users/<id>
 
 GET/POST        /api/invoices
 GET/PUT/DELETE  /api/invoices/<id>
+GET             /api/invoices/<id>/audit
 GET             /api/invoices/next-number
 GET             /api/invoices/<id>/pdf
 POST            /api/invoices/<id>/email
@@ -300,6 +303,19 @@ backend/outputs/
 
 ## Verification Checklist
 
+Automated backend tests:
+
+```powershell
+python -m pytest backend/tests
+```
+
+Frontend production build:
+
+```powershell
+cd frontend/gst-gem-main
+npm run build
+```
+
 - Login as admin
 - Create a new user
 - Confirm admin can change permissions
@@ -323,6 +339,7 @@ backend/outputs/
 - Use HTTPS in production
 - Prefer PostgreSQL for hosted multi-user deployment after migrating the repository layer
 - Do not commit SQLite database, generated PDFs, uploaded logos, or backup zips
+- Revoke and rotate any GitHub or SMTP token that was accidentally printed or shared
 
 ## Developer Signature
 

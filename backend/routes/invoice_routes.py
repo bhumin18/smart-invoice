@@ -19,6 +19,7 @@ from services.invoice_service import (
 from services.email_service import send_invoice_email
 from services.pdf_service import download_invoice_pdf, download_receipt_pdf
 from services.numbering_service import preview_next_invoice_number
+from services.audit_service import list_invoice_audit
 from utils.helpers import ValidationError, api_response
 from utils.auth_context import user_scope
 
@@ -85,6 +86,23 @@ def get_invoice_route(invoice_id: int):
     except Exception as exc:
         logger.exception("Invoice fetch failed for id=%s", invoice_id)
         return api_response(False, {}, "Failed to fetch invoice", 500, {"error": str(exc)})
+
+
+@invoice_bp.get("/<int:invoice_id>/audit")
+def invoice_audit_route(invoice_id: int):
+    """Fetch audit history for one invoice."""
+    try:
+        invoice = get_invoice(invoice_id, getattr(g, "current_user", {}) or {})
+        if invoice is None:
+            return api_response(False, {}, "Invoice not found", 404)
+        return api_response(
+            True,
+            list_invoice_audit(invoice_id, getattr(g, "current_user", {}) or {}),
+            "Invoice audit history fetched successfully",
+        )
+    except Exception as exc:
+        logger.exception("Invoice audit fetch failed for id=%s", invoice_id)
+        return api_response(False, {}, "Failed to fetch invoice audit history", 500, {"error": str(exc)})
 
 
 @invoice_bp.put("/<int:invoice_id>")

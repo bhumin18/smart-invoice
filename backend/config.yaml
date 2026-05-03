@@ -16,7 +16,7 @@ cors:
 
 database:
   # Active engine. Current production-ready adapter is sqlite.
-  # Supported config profiles: sqlite, postgresql, mysql, mongodb.
+  # PostgreSQL/MySQL/MongoDB values are placeholders for future repository adapters.
   engine: sqlite
 
   sqlite:
@@ -67,6 +67,8 @@ auth:
   enabled: true
   allow_registration: true
   token_expiry_hours: 24
+  password_reset_token_minutes: 30
+  password_reset_url: http://localhost:5173
   admin_username: admin
   # Default password for local development is admin123.
   # Change this before sharing/deployment. Environment variable ADMIN_PASSWORD overrides it.

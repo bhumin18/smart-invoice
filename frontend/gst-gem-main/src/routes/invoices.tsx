@@ -38,6 +38,12 @@ function InvoicesList() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
+  const { data: currentUser } = useQuery({
+    queryKey: ["current-user"],
+    queryFn: api.currentUser,
+    retry: false,
+    staleTime: 60 * 1000,
+  });
   const { data, isLoading, error } = useQuery({
     queryKey: ["invoices", search, status],
     queryFn: () => api.listInvoices({ search, status }),
@@ -53,6 +59,8 @@ function InvoicesList() {
   });
 
   const invoices: Invoice[] = Array.isArray(data) ? data : [];
+  const canCreateInvoices =
+    currentUser?.user.role === "admin" || Boolean(currentUser?.user.canCreateInvoices);
 
   if (location.pathname !== "/invoices") {
     return <Outlet />;
@@ -65,11 +73,13 @@ function InvoicesList() {
           <h1 className="text-3xl font-bold tracking-tight">Invoices</h1>
           <p className="text-muted-foreground mt-1">All your generated invoices.</p>
         </div>
-        <Button asChild className="rounded-full" style={{ boxShadow: "var(--shadow-elegant)" }}>
-          <Link to="/invoices/new">
-            <Plus className="h-4 w-4" /> New Invoice
-          </Link>
-        </Button>
+        {canCreateInvoices && (
+          <Button asChild className="rounded-full" style={{ boxShadow: "var(--shadow-elegant)" }}>
+            <Link to="/invoices/new">
+              <Plus className="h-4 w-4" /> New Invoice
+            </Link>
+          </Button>
+        )}
       </div>
 
       <Card>

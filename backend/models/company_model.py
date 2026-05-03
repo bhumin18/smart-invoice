@@ -141,7 +141,7 @@ def create_company_table() -> None:
         connection.execute(
             """
             CREATE TABLE IF NOT EXISTS company (
-                id INTEGER PRIMARY KEY CHECK (id = 1),
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 owner_user_id INTEGER,
                 name TEXT NOT NULL,
                 legal_name TEXT,
@@ -172,6 +172,7 @@ def create_company_table() -> None:
             """
         )
         _ensure_company_columns(connection)
+        connection.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_company_owner_user_id ON company(owner_user_id)")
         exists = connection.execute("SELECT id FROM company WHERE id = 1").fetchone()
         if exists is None:
             now = now_iso()
@@ -186,7 +187,7 @@ def create_company_table() -> None:
                     authorized_signatory_name, signature_path,
                     created_at, updated_at
                 )
-                VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     1,

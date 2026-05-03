@@ -39,6 +39,11 @@ function InvoiceDetail() {
     queryKey: ["invoice", id],
     queryFn: () => api.getInvoice(id),
   });
+  const { data: auditLogs = [] } = useQuery({
+    queryKey: ["invoice-audit", id],
+    queryFn: () => api.getInvoiceAudit(id),
+    enabled: Boolean(id),
+  });
   const [isEditing, setIsEditing] = useState(false);
   const [voidReason, setVoidReason] = useState("");
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().slice(0, 10));
@@ -84,6 +89,7 @@ function InvoiceDetail() {
     onSuccess: (updated) => {
       qc.setQueryData(["invoice", id], updated);
       qc.invalidateQueries({ queryKey: ["invoices"] });
+      qc.invalidateQueries({ queryKey: ["invoice-audit", id] });
       toast.success("Invoice updated");
       setIsEditing(false);
     },
@@ -115,6 +121,7 @@ function InvoiceDetail() {
     onSuccess: (updated) => {
       qc.setQueryData(["invoice", id], updated);
       qc.invalidateQueries({ queryKey: ["invoices"] });
+      qc.invalidateQueries({ queryKey: ["invoice-audit", id] });
       toast.success("Invoice voided");
     },
     onError: (e: Error) => toast.error(e.message),
@@ -132,6 +139,7 @@ function InvoiceDetail() {
     onSuccess: (updated) => {
       qc.setQueryData(["invoice", id], updated);
       qc.invalidateQueries({ queryKey: ["invoices"] });
+      qc.invalidateQueries({ queryKey: ["invoice-audit", id] });
       toast.success("Payment recorded");
       setPaymentReference("");
       setPaymentNotes("");
@@ -661,6 +669,36 @@ function InvoiceDetail() {
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Audit History</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {auditLogs.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No audit events yet.</p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Action</TableHead>
+                      <TableHead>User</TableHead>
+                      <TableHead>Time</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {auditLogs.map((log) => (
+                      <TableRow key={log.id}>
+                        <TableCell className="font-medium">{log.action.replace(/_/g, " ")}</TableCell>
+                        <TableCell>{log.actorUsername || "-"}</TableCell>
+                        <TableCell>{log.createdAt ? new Date(log.createdAt).toLocaleString("en-IN") : "-"}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </>

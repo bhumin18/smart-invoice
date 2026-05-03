@@ -50,6 +50,8 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "enabled": True,
         "allow_registration": True,
         "token_expiry_hours": 24,
+        "password_reset_token_minutes": 30,
+        "password_reset_url": "http://localhost:5173",
         "admin_username": "admin",
         "admin_password": "admin123",
         "admin_email": "admin@example.com",
@@ -65,6 +67,9 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "backup_restore_enabled": True,
     },
 }
+
+DEFAULT_SECRET_KEY = "change-this-secret-key"
+DEFAULT_ADMIN_PASSWORD = "admin123"
 
 
 def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
@@ -147,6 +152,12 @@ APP_CONFIG["auth"]["allow_registration"] = _env_bool(
 APP_CONFIG["auth"]["token_expiry_hours"] = _env_int(
     "AUTH_TOKEN_EXPIRY_HOURS", int(APP_CONFIG["auth"]["token_expiry_hours"])
 )
+APP_CONFIG["auth"]["password_reset_token_minutes"] = _env_int(
+    "AUTH_PASSWORD_RESET_TOKEN_MINUTES", int(APP_CONFIG["auth"]["password_reset_token_minutes"])
+)
+APP_CONFIG["auth"]["password_reset_url"] = os.getenv(
+    "AUTH_PASSWORD_RESET_URL", str(APP_CONFIG["auth"]["password_reset_url"])
+)
 APP_CONFIG["auth"]["admin_username"] = os.getenv(
     "ADMIN_USERNAME", str(APP_CONFIG["auth"]["admin_username"])
 )
@@ -185,7 +196,8 @@ def get_public_config() -> dict[str, Any]:
         "database": {
             "engine": DATABASE_ENGINE,
             "active_adapter": "sqlite3" if DATABASE_ENGINE == "sqlite" else "not_enabled",
-            "supported_config_profiles": ["sqlite", "postgresql", "mysql", "mongodb"],
+            "available_adapter": "sqlite",
+            "future_config_profiles": ["postgresql", "mysql", "mongodb"],
         },
         "features": get_config("features", {}),
         "auth": {"enabled": bool(get_config("auth.enabled", True))},
@@ -231,3 +243,23 @@ def validate_database_config() -> None:
             "the current app, or add a SQLAlchemy/MongoDB repository adapter before "
             "activating PostgreSQL, MySQL, or MongoDB."
         )
+
+
+def validate_runtime_config() -> None:
+    """Fail fast when unsafe development defaults are used in production."""
+    environment = str(get_config("app.environment", "development")).strip().lower()
+    if environment != "production":
+        return
+
+    errors: list[str] = []
+    if SECRET_KEY == DEFAULT_SECRET_KEY:
+        errors.append("SECRET_KEY/app.secret_key must be changed in production")
+    if bool(get_config("auth.enabled", True)) and str(get_config("auth.admin_password", "")) == DEFAULT_ADMIN_PASSWORD:
+        errors.append("ADMIN_PASSWORD/auth.admin_password must be changed in production")
+    if bool(get_config("cors.allow_all", False)):
+        errors.append("cors.allow_all must be false in production")
+    if APP_DEBUG:
+        errors.append("APP_DEBUG/app.debug must be false in production")
+
+    if errors:
+        raise RuntimeError("Unsafe production configuration: " + "; ".join(errors))
