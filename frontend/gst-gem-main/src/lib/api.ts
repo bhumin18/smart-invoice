@@ -87,6 +87,7 @@ export type Company = {
   termsAndConditions?: string;
   authorizedSignatoryName?: string;
   signaturePath?: string;
+  pdfTemplate?: string;
 };
 
 export type GstReport = {
@@ -141,6 +142,13 @@ export type DashboardSummary = {
   recentInvoices: Invoice[];
 };
 
+export type DashboardAnalytics = {
+  monthly: Array<{ month: string; revenue: number; gst: number }>;
+  status: Array<{ status: string; count: number; amount: number }>;
+  topClients: Array<{ clientName: string; amount: number; invoiceCount: number }>;
+  overdue: Array<{ invoice_number: string; client_name: string; due_date: string; balance_due: number }>;
+};
+
 export type AppUser = {
   id?: string | number;
   username: string;
@@ -160,6 +168,16 @@ export type AuditLog = {
   actorUsername?: string;
   details: Record<string, unknown>;
   createdAt: string;
+};
+
+export type RecurringInvoice = {
+  id?: string | number;
+  name: string;
+  clientName: string;
+  frequency: string;
+  nextRunDate: string;
+  active: boolean;
+  payload?: Record<string, unknown>;
 };
 
 function normalizeItem(item: any): InvoiceItem {
@@ -260,6 +278,7 @@ function normalizeCompany(company: any): Company {
     termsAndConditions: company.terms_and_conditions ?? company.termsAndConditions ?? "",
     authorizedSignatoryName: company.authorized_signatory_name ?? company.authorizedSignatoryName ?? "",
     signaturePath: company.signature_path ?? company.signaturePath ?? "",
+    pdfTemplate: company.pdf_template ?? company.pdfTemplate ?? "simple",
   };
 }
 
@@ -288,6 +307,7 @@ function companyPayload(company: Company) {
     terms_and_conditions: company.termsAndConditions ?? "",
     authorized_signatory_name: company.authorizedSignatoryName ?? "",
     signature_path: company.signaturePath ?? "",
+    pdf_template: company.pdfTemplate ?? "simple",
   };
 }
 
@@ -364,6 +384,33 @@ function normalizeDashboardSummary(summary: any): DashboardSummary {
   };
 }
 
+function normalizeDashboardAnalytics(value: any): DashboardAnalytics {
+  return {
+    monthly: Array.isArray(value.monthly)
+      ? value.monthly.map((row: any) => ({
+          month: row.month ?? "",
+          revenue: Number(row.revenue ?? 0),
+          gst: Number(row.gst ?? 0),
+        }))
+      : [],
+    status: Array.isArray(value.status)
+      ? value.status.map((row: any) => ({
+          status: row.status ?? "",
+          count: Number(row.count ?? 0),
+          amount: Number(row.amount ?? 0),
+        }))
+      : [],
+    topClients: Array.isArray(value.top_clients)
+      ? value.top_clients.map((row: any) => ({
+          clientName: row.client_name ?? "",
+          amount: Number(row.amount ?? 0),
+          invoiceCount: Number(row.invoice_count ?? 0),
+        }))
+      : [],
+    overdue: Array.isArray(value.overdue) ? value.overdue : [],
+  };
+}
+
 function normalizeUser(user: any): AppUser {
   return {
     id: user.id,
@@ -386,6 +433,18 @@ function normalizeAuditLog(log: any): AuditLog {
     actorUsername: log.actor_username ?? log.actorUsername ?? "",
     details: log.details && typeof log.details === "object" ? log.details : {},
     createdAt: log.created_at ?? log.createdAt ?? "",
+  };
+}
+
+function normalizeRecurring(profile: any): RecurringInvoice {
+  return {
+    id: profile.id,
+    name: profile.name ?? "",
+    clientName: profile.client_name ?? profile.clientName ?? "",
+    frequency: profile.frequency ?? "monthly",
+    nextRunDate: profile.next_run_date ?? profile.nextRunDate ?? "",
+    active: Boolean(profile.active ?? true),
+    payload: profile.payload ?? {},
   };
 }
 
@@ -496,6 +555,11 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ token, password }),
     }),
+  verifyEmail: (token: string) =>
+    request<AppUser>("/auth/verify-email", {
+      method: "POST",
+      body: JSON.stringify({ token }),
+    }),
   changePassword: (currentPassword: string, newPassword: string) =>
     request<{ changed: boolean }>("/auth/change-password", {
       method: "POST",
@@ -511,6 +575,8 @@ export const api = {
   getBranding: async () => normalizeBranding(await request<any>("/branding")),
   getDashboardSummary: async () =>
     normalizeDashboardSummary(await request<any>("/dashboard/summary")),
+  getDashboardAnalytics: async () =>
+    normalizeDashboardAnalytics(await request<any>("/dashboard/analytics")),
   listInvoices: async (filters: Record<string, string> = {}) => {
     const query = new URLSearchParams(
       Object.entries(filters).filter(([, value]) => String(value || "").trim()),
@@ -625,6 +691,20 @@ export const api = {
     }
     return normalizeCompany(payload.data);
   },
+  importClients: async (file: File) => {
+    const body = new FormData();
+    body.append("file", file);
+    const res = await fetch(`${API_BASE}/clients/import`, {
+      method: "POST",
+      headers: localStorage.getItem(TOKEN_KEY)
+        ? { Authorization: `Bearer ${localStorage.getItem(TOKEN_KEY)}` }
+        : {},
+      body,
+    });
+    const payload = (await res.json()) as ApiEnvelope<any>;
+    if (!res.ok || payload.success === false) throw new ApiError(payload.message || "Client import failed", payload.errors || {});
+    return payload.data;
+  },
   listClients: async (search = "") => {
     const query = search ? `?search=${encodeURIComponent(search)}` : "";
     const clients = await request<any[]>(`/clients${query}`);
@@ -668,6 +748,40 @@ export const api = {
       }),
     ),
   deleteProduct: (id: string) => request<{ id: number }>(`/products/${id}`, { method: "DELETE" }),
+  importProducts: async (file: File) => {
+    const body = new FormData();
+    body.append("file", file);
+    const res = await fetch(`${API_BASE}/products/import`, {
+      method: "POST",
+      headers: localStorage.getItem(TOKEN_KEY)
+        ? { Authorization: `Bearer ${localStorage.getItem(TOKEN_KEY)}` }
+        : {},
+      body,
+    });
+    const payload = (await res.json()) as ApiEnvelope<any>;
+    if (!res.ok || payload.success === false) throw new ApiError(payload.message || "Product import failed", payload.errors || {});
+    return payload.data;
+  },
+  listRecurringInvoices: async () => {
+    const rows = await request<any[]>("/recurring-invoices");
+    return rows.map(normalizeRecurring);
+  },
+  createRecurringInvoice: async (data: { name: string; frequency: string; nextRunDate: string; invoice: Omit<Invoice, "id"> }) =>
+    normalizeRecurring(
+      await request<any>("/recurring-invoices", {
+        method: "POST",
+        body: JSON.stringify({
+          name: data.name,
+          frequency: data.frequency,
+          next_run_date: data.nextRunDate,
+          invoice: invoicePayload(data.invoice),
+        }),
+      }),
+    ),
+  runDueRecurringInvoices: () => request<{ generated_count: number }>("/recurring-invoices/run-due", { method: "POST" }),
+  getPaymentReminders: (days = 7) => request<any>(`/reminders/payments?days=${days}`),
+  sendPaymentReminders: (days = 7) =>
+    request<any>("/reminders/payments/send", { method: "POST", body: JSON.stringify({ days }) }),
   listUsers: async () => {
     const users = await request<any[]>("/users");
     return users.map(normalizeUser);
@@ -679,6 +793,12 @@ export const api = {
         body: JSON.stringify(userPayload(user)),
       }),
     ),
+  getAdminOverview: () => request<any>("/users/admin/overview"),
+  updateAdminSettings: (data: { registrationEnabled: boolean }) =>
+    request<any>("/users/admin/settings", {
+      method: "PUT",
+      body: JSON.stringify({ registration_enabled: data.registrationEnabled }),
+    }),
   downloadBackup: () => downloadBlob("/backups/export", `smart_invoice_backup_${new Date().toISOString().slice(0, 10)}.zip`),
   downloadDataExport: (format: "xlsx" | "json") =>
     downloadBlob(

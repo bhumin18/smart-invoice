@@ -166,4 +166,19 @@
   [aria-disabled="true"] {
     cursor: not-allowed;
   }
+
+  @media (max-width: 640px) {
+    main {
+      padding: 1rem;
+    }
+
+    h1 {
+      font-size: 1.625rem;
+      line-height: 2rem;
+    }
+
+    .recharts-responsive-container {
+      min-height: 240px;
+    }
+  }
 }

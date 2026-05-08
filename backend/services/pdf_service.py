@@ -212,14 +212,20 @@ def _draw_company(pdf: canvas.Canvas, company: dict[str, Any]) -> None:
             y = _draw_wrapped(pdf, line, LEFT, y, 72 * mm, size=9, leading=10, max_lines=2)
 
 
-def _draw_invoice_title(pdf: canvas.Canvas, invoice: dict[str, Any], symbol: str) -> None:
+def _draw_invoice_title(pdf: canvas.Canvas, invoice: dict[str, Any], symbol: str, template: str = "simple") -> None:
     """Draw invoice title, number, and balance due."""
     balance_due = float(invoice.get("balance_due", invoice.get("total", 0)))
     if str(invoice.get("status", "")).lower() == "void":
         balance_due = 0.0
     pdf.setFillColor(colors.black)
-    pdf.setFont("Helvetica", 27)
-    pdf.drawRightString(RIGHT, TOP - 2, "TAX INVOICE")
+    title = "TAX INVOICE"
+    if template == "compact":
+        pdf.setFont("Helvetica-Bold", 20)
+    elif template == "modern":
+        pdf.setFont("Helvetica-Bold", 28)
+    else:
+        pdf.setFont("Helvetica", 27)
+    pdf.drawRightString(RIGHT, TOP - 2, title)
     pdf.setFont("Helvetica-Bold", 10)
     pdf.drawRightString(RIGHT, TOP - 18, f"# {_clean(invoice.get('invoice_number'))}")
     pdf.setFont("Helvetica-Bold", 8)
@@ -454,11 +460,15 @@ def generate_invoice_pdf(invoice: dict[str, Any]) -> str:
     ensure_directories()
     company = get_company(invoice.get("owner_user_id"))
     symbol = str(company.get("currency_symbol") or "Rs.")
+    template = str(company.get("pdf_template") or "simple").lower()
     output_path = INVOICE_OUTPUT_DIR / f"{invoice['invoice_number']}.pdf"
     pdf = canvas.Canvas(str(output_path), pagesize=A4)
 
+    if template == "letterhead":
+        pdf.setFillColor(colors.HexColor("#F7F7F7"))
+        pdf.rect(0, PAGE_HEIGHT - 38 * mm, PAGE_WIDTH, 38 * mm, stroke=0, fill=1)
     _draw_company(pdf, company)
-    _draw_invoice_title(pdf, invoice, symbol)
+    _draw_invoice_title(pdf, invoice, symbol, template)
     _draw_bill_to(pdf, invoice)
     _draw_invoice_meta(pdf, invoice)
     y = _draw_items(pdf, invoice)

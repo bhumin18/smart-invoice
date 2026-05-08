@@ -13,6 +13,7 @@ from services.product_service import (
     get_products,
     update_product,
 )
+from services.import_service import import_products
 from utils.helpers import ValidationError, api_response
 
 
@@ -63,6 +64,22 @@ def create_product_route():
     except Exception as exc:
         logger.exception("Product creation failed")
         return api_response(False, {}, "Failed to create product", 500, {"error": str(exc)})
+
+
+@product_bp.post("/import")
+def import_products_route():
+    """Import product/service master records from CSV or Excel."""
+    try:
+        return api_response(
+            True,
+            import_products(request.files.get("file"), getattr(g, "current_user", {}) or {}),
+            "Products imported successfully",
+        )
+    except ValidationError as exc:
+        return api_response(False, {}, exc.message, 400, exc.errors)
+    except Exception as exc:
+        logger.exception("Product import failed")
+        return api_response(False, {}, "Failed to import products", 500, {"error": str(exc)})
 
 
 @product_bp.put("/<int:product_id>")

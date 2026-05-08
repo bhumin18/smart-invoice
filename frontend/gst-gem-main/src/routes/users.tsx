@@ -26,11 +26,24 @@ function UsersPage() {
     queryKey: ["users"],
     queryFn: api.listUsers,
   });
+  const { data: adminOverview } = useQuery({
+    queryKey: ["admin-overview"],
+    queryFn: api.getAdminOverview,
+    retry: false,
+  });
   const save = useMutation({
     mutationFn: (user: AppUser) => api.updateUser(String(user.id ?? ""), user),
     onSuccess: () => {
       toast.success("User permissions updated");
       qc.invalidateQueries({ queryKey: ["users"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const settings = useMutation({
+    mutationFn: api.updateAdminSettings,
+    onSuccess: () => {
+      toast.success("Admin settings updated");
+      qc.invalidateQueries({ queryKey: ["admin-overview"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -113,6 +126,52 @@ function UsersPage() {
           )}
         </CardContent>
       </Card>
+
+      {adminOverview && (
+        <div className="grid gap-4 md:grid-cols-4">
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm">Total Users</CardTitle></CardHeader>
+            <CardContent className="text-2xl font-bold">{adminOverview.total_users}</CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm">Active Users</CardTitle></CardHeader>
+            <CardContent className="text-2xl font-bold">{adminOverview.active_users}</CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm">Total Invoices</CardTitle></CardHeader>
+            <CardContent className="text-2xl font-bold">{adminOverview.total_invoices}</CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm">Registration</CardTitle></CardHeader>
+            <CardContent>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => settings.mutate({ registrationEnabled: !adminOverview.registration_enabled })}
+              >
+                {adminOverview.registration_enabled ? "Enabled" : "Disabled"}
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {adminOverview?.recent_activity?.length ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent User Activity</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {adminOverview.recent_activity.slice(0, 8).map((event: any) => (
+              <div key={event.id} className="flex justify-between rounded-md border p-3 text-sm">
+                <span>{event.actor_username || "system"} {String(event.action || "").replace(/_/g, " ")} {event.entity_type}</span>
+                <span className="text-muted-foreground">{event.created_at ? new Date(event.created_at).toLocaleString("en-IN") : ""}</span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      ) : null}
     </div>
   );
 }

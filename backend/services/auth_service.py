@@ -16,9 +16,12 @@ from models.user_model import (
     get_user_by_username,
     insert_user,
     set_reset_token,
+    set_verification_token,
     update_password,
     user_count,
+    verify_email_token,
 )
+from models.settings_model import registration_enabled
 from utils.helpers import ValidationError
 
 
@@ -73,7 +76,7 @@ def verify_token(token: str) -> dict[str, Any] | None:
 
 def register(payload: dict[str, Any]) -> dict[str, Any]:
     """Create a user account when registration is allowed."""
-    if not bool(get_config("auth.allow_registration", True)) and user_count() > 0:
+    if not registration_enabled() and user_count() > 0:
         raise ValidationError({"registration": "Account registration is disabled"})
     username = str(payload.get("username", "")).strip()
     email = str(payload.get("email", "")).strip()
@@ -92,6 +95,24 @@ def register(payload: dict[str, Any]) -> dict[str, Any]:
     if errors:
         raise ValidationError(errors)
     user = insert_user(username, email, password, role="user")
+    result = public_user(user)
+    if email:
+        token = secrets.token_urlsafe(32)
+        set_verification_token(int(user["id"]), token)
+        if str(get_config("app.environment", "development")).lower() != "production":
+            result["verification_token"] = token
+            result["verification_link"] = f"{str(get_config('auth.password_reset_url', 'http://localhost:5173')).rstrip('/')}/?verify_email={token}"
+    return result
+
+
+def verify_email(payload: dict[str, Any]) -> dict[str, Any]:
+    """Verify user email address by token."""
+    token = str(payload.get("token", "")).strip()
+    if not token:
+        raise ValidationError({"token": "Verification token is required"})
+    user = verify_email_token(token)
+    if user is None:
+        raise ValidationError({"token": "Verification token is invalid"})
     return public_user(user)
 
 
@@ -170,6 +191,7 @@ def public_user(user: dict[str, Any]) -> dict[str, Any]:
         "can_create_invoices": bool(user.get("can_create_invoices", True)),
         "can_manage_company": bool(user.get("can_manage_company", True)),
         "can_export_data": bool(user.get("can_export_data", True)),
+        "email_verified": bool(user.get("email_verified", False)),
     }
 
 

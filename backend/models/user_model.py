@@ -36,6 +36,8 @@ def create_user_table() -> None:
             "can_create_invoices": "INTEGER NOT NULL DEFAULT 1",
             "can_manage_company": "INTEGER NOT NULL DEFAULT 1",
             "can_export_data": "INTEGER NOT NULL DEFAULT 1",
+            "email_verified": "INTEGER NOT NULL DEFAULT 0",
+            "verification_token": "TEXT",
         }
         for column, definition in extra_columns.items():
             if column not in existing:
@@ -94,12 +96,12 @@ def insert_user(username: str, email: str, password: str, role: str = "admin") -
             """
             INSERT INTO users (
                 username, email, password_hash, role, active,
-                can_create_invoices, can_manage_company, can_export_data,
+                can_create_invoices, can_manage_company, can_export_data, email_verified,
                 created_at, updated_at
             )
-            VALUES (?, ?, ?, ?, 1, 1, 1, 1, ?, ?)
+            VALUES (?, ?, ?, ?, 1, 1, 1, 1, ?, ?, ?)
             """,
-            (username.strip(), email.strip(), generate_password_hash(password), role, now, now),
+            (username.strip(), email.strip(), generate_password_hash(password), role, int(not email.strip()), now, now),
         )
         connection.commit()
     with get_db_connection() as connection:
@@ -115,6 +117,7 @@ def list_users() -> list[dict[str, Any]]:
             SELECT
                 id, username, email, role, active,
                 can_create_invoices, can_manage_company, can_export_data,
+                email_verified,
                 created_at, updated_at
             FROM users
             ORDER BY id
@@ -187,3 +190,28 @@ def update_password(user_id: int, password: str) -> None:
             (generate_password_hash(password), now_iso(), user_id),
         )
         connection.commit()
+
+
+def set_verification_token(user_id: int, token: str) -> None:
+    """Persist email verification token."""
+    with get_db_connection() as connection:
+        connection.execute(
+            "UPDATE users SET verification_token = ?, updated_at = ? WHERE id = ?",
+            (token, now_iso(), user_id),
+        )
+        connection.commit()
+
+
+def verify_email_token(token: str) -> dict[str, Any] | None:
+    """Verify a user email by token."""
+    with get_db_connection() as connection:
+        row = connection.execute("SELECT * FROM users WHERE verification_token = ?", (token,)).fetchone()
+        if row is None:
+            return None
+        user_id = row["id"]
+        connection.execute(
+            "UPDATE users SET email_verified = 1, verification_token = NULL, updated_at = ? WHERE id = ?",
+            (now_iso(), user_id),
+        )
+        connection.commit()
+    return get_user_by_id(int(user_id))

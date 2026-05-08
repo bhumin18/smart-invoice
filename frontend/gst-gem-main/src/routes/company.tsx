@@ -40,6 +40,7 @@ const emptyCompany: Company = {
   termsAndConditions: "",
   authorizedSignatoryName: "",
   signaturePath: "",
+  pdfTemplate: "simple",
 };
 
 const demoCompany: Company = {
@@ -66,6 +67,7 @@ const demoCompany: Company = {
   termsAndConditions: "Please make the payment by the due date.",
   authorizedSignatoryName: "Authorized Signatory",
   signaturePath: "",
+  pdfTemplate: "simple",
 };
 
 function CompanyPage() {
@@ -253,6 +255,18 @@ function CompanyPage() {
                     />
                   </Field>
                 </div>
+                <Field label="Invoice PDF Template">
+                  <select
+                    className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                    value={form.pdfTemplate || "simple"}
+                    onChange={(e) => set("pdfTemplate", e.target.value)}
+                  >
+                    <option value="simple">Simple Zoho Style</option>
+                    <option value="modern">Modern</option>
+                    <option value="compact">Compact</option>
+                    <option value="letterhead">Letterhead</option>
+                  </select>
+                </Field>
 
                 <div className="grid md:grid-cols-[1fr_auto] gap-4 items-end">
                   <Field label="Logo Path">

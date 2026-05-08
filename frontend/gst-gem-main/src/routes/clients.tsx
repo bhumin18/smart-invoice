@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Pencil, Plus, Search, Trash2, Users } from "lucide-react";
+import { Pencil, Plus, Search, Trash2, Upload, Users } from "lucide-react";
 import { api, type Client } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -59,6 +59,14 @@ function ClientsPage() {
     mutationFn: api.deleteClient,
     onSuccess: () => {
       toast.success("Client deleted");
+      qc.invalidateQueries({ queryKey: ["clients"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const importData = useMutation({
+    mutationFn: api.importClients,
+    onSuccess: (result) => {
+      toast.success(`Imported ${result.created_count || 0} clients`);
       qc.invalidateQueries({ queryKey: ["clients"] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -139,6 +147,21 @@ function ClientsPage() {
             <div className="relative w-full md:w-80">
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search clients..." />
+            </div>
+            <div>
+              <Input
+                id="client-import"
+                type="file"
+                accept=".csv,.xlsx,.xls"
+                className="hidden"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) importData.mutate(file);
+                }}
+              />
+              <Button type="button" variant="outline" onClick={() => document.getElementById("client-import")?.click()}>
+                <Upload className="h-4 w-4" /> Import
+              </Button>
             </div>
           </CardHeader>
           <CardContent>

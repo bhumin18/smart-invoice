@@ -69,6 +69,27 @@ function ReportsPage() {
     onSuccess: () => toast.success("Data export downloaded"),
     onError: (e: Error) => toast.error(e.message),
   });
+  const recurring = useQuery({
+    queryKey: ["recurring-invoices"],
+    queryFn: api.listRecurringInvoices,
+  });
+  const runRecurring = useMutation({
+    mutationFn: api.runDueRecurringInvoices,
+    onSuccess: (result) => {
+      toast.success(`Generated ${result.generated_count || 0} recurring invoices`);
+      recurring.refetch();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const reminders = useQuery({
+    queryKey: ["payment-reminders"],
+    queryFn: () => api.getPaymentReminders(7),
+  });
+  const sendReminders = useMutation({
+    mutationFn: () => api.sendPaymentReminders(7),
+    onSuccess: (result) => toast.success(`Sent ${result.sent_count || 0} reminders`),
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   const data = m.data;
 
@@ -159,6 +180,55 @@ function ReportsPage() {
           </CardContent>
         </Card>
       )}
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Recurring Invoices</CardTitle>
+            <Button type="button" variant="outline" onClick={() => runRecurring.mutate()} disabled={runRecurring.isPending}>
+              Run Due
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {(recurring.data || []).length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">No recurring profiles yet. Create one from an invoice payload through the API.</p>
+            ) : (
+              <div className="space-y-3">
+                {(recurring.data || []).map((profile) => (
+                  <div key={String(profile.id)} className="rounded-md border p-3">
+                    <div className="font-medium">{profile.name}</div>
+                    <div className="text-xs text-muted-foreground">{profile.clientName} • {profile.frequency} • next {profile.nextRunDate}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Payment Reminders</CardTitle>
+            <Button type="button" variant="outline" onClick={() => sendReminders.mutate()} disabled={sendReminders.isPending}>
+              Send Emails
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-md border p-3">
+                <div className="text-xs text-muted-foreground">Due Soon</div>
+                <div className="text-2xl font-bold">{reminders.data?.due_soon?.length || 0}</div>
+              </div>
+              <div className="rounded-md border p-3">
+                <div className="text-xs text-muted-foreground">Overdue</div>
+                <div className="text-2xl font-bold">{reminders.data?.overdue?.length || 0}</div>
+              </div>
+            </div>
+            <p className="mt-3 text-xs text-muted-foreground">
+              Reminder emails require SMTP configuration and client email data.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
 
       {data && (
         <>

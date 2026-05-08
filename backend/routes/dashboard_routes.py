@@ -6,7 +6,7 @@ import logging
 
 from flask import Blueprint, g
 
-from services.dashboard_service import get_dashboard_summary
+from services.dashboard_service import get_dashboard_analytics, get_dashboard_summary
 from utils.helpers import api_response
 
 
@@ -26,3 +26,17 @@ def dashboard_summary_route():
     except Exception as exc:
         logger.exception("Dashboard summary failed")
         return api_response(False, {}, "Failed to fetch dashboard summary", 500, {"error": str(exc)})
+
+
+@dashboard_bp.get("/analytics")
+def dashboard_analytics_route():
+    """Return dashboard chart analytics."""
+    try:
+        return api_response(
+            True,
+            get_dashboard_analytics(getattr(g, "current_user", {}) or {}),
+            "Dashboard analytics fetched successfully",
+        )
+    except Exception as exc:
+        logger.exception("Dashboard analytics failed")
+        return api_response(False, {}, "Failed to fetch dashboard analytics", 500, {"error": str(exc)})

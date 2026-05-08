@@ -14,16 +14,21 @@ from models.client_model import create_client_table
 from models.company_model import create_company_table
 from models.invoice_model import create_invoice_tables
 from models.product_model import create_product_table
+from models.recurring_model import create_recurring_table
+from models.settings_model import create_settings_table
 from models.user_model import create_user_table
 from routes.auth_routes import auth_bp
 from routes.backup_routes import backup_bp
 from routes.client_routes import client_bp
 from routes.company_routes import company_bp
 from routes.dashboard_routes import dashboard_bp
+from routes.docs_routes import docs_bp
 from routes.export_routes import export_bp
 from routes.gst_routes import gst_bp
 from routes.invoice_routes import invoice_bp
 from routes.product_routes import product_bp
+from routes.recurring_routes import recurring_bp
+from routes.reminder_routes import reminder_bp
 from routes.user_routes import user_bp
 from services.auth_service import auth_enabled, verify_token
 from utils.helpers import api_response, ensure_directories, setup_logging
@@ -38,6 +43,8 @@ def init_database() -> None:
     create_client_table()
     create_product_table()
     create_audit_table()
+    create_settings_table()
+    create_recurring_table()
 
 
 def create_app() -> Flask:
@@ -59,7 +66,10 @@ def create_app() -> Flask:
     app.register_blueprint(company_bp)
     app.register_blueprint(client_bp)
     app.register_blueprint(product_bp)
+    app.register_blueprint(recurring_bp)
+    app.register_blueprint(reminder_bp)
     app.register_blueprint(dashboard_bp)
+    app.register_blueprint(docs_bp)
     app.register_blueprint(backup_bp)
     app.register_blueprint(export_bp)
     app.register_blueprint(user_bp)
@@ -75,10 +85,13 @@ def create_app() -> Flask:
             "/api/health",
             "/api/branding",
             "/api/config/public",
+            "/api/docs",
+            "/api/docs/openapi.json",
             "/api/auth/login",
             "/api/auth/register",
             "/api/auth/forgot-password",
             "/api/auth/reset-password",
+            "/api/auth/verify-email",
         }
         if request.path in public_paths:
             return None

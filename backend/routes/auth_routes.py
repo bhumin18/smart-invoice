@@ -6,7 +6,7 @@ import logging
 
 from flask import Blueprint, g, request
 
-from services.auth_service import auth_enabled, change_password, forgot_password, login, register, reset_password
+from services.auth_service import auth_enabled, change_password, forgot_password, login, register, reset_password, verify_email
 from utils.helpers import ValidationError, api_response
 
 
@@ -61,6 +61,18 @@ def reset_password_route():
     except Exception as exc:
         logger.exception("Reset password failed")
         return api_response(False, {}, "Password reset failed", 500, {"error": str(exc)})
+
+
+@auth_bp.post("/verify-email")
+def verify_email_route():
+    """Verify account email address."""
+    try:
+        return api_response(True, verify_email(request.get_json(silent=True) or {}), "Email verified successfully")
+    except ValidationError as exc:
+        return api_response(False, {}, exc.message, 400, exc.errors)
+    except Exception as exc:
+        logger.exception("Email verification failed")
+        return api_response(False, {}, "Email verification failed", 500, {"error": str(exc)})
 
 
 @auth_bp.post("/change-password")

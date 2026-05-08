@@ -31,6 +31,7 @@ DEFAULT_COMPANY = {
     "terms_and_conditions": "Please make the payment by the due date.",
     "authorized_signatory_name": "",
     "signature_path": "",
+    "pdf_template": "simple",
 }
 
 COMPANY_COLUMNS = {
@@ -45,6 +46,7 @@ COMPANY_COLUMNS = {
     "terms_and_conditions": "TEXT",
     "authorized_signatory_name": "TEXT",
     "signature_path": "TEXT",
+    "pdf_template": "TEXT NOT NULL DEFAULT 'simple'",
 }
 
 
@@ -98,8 +100,9 @@ def _migrate_company_table_if_needed(connection) -> None:
             default_payment_terms TEXT,
             terms_and_conditions TEXT,
             authorized_signatory_name TEXT,
-            signature_path TEXT,
-            created_at TEXT NOT NULL,
+                    signature_path TEXT,
+                    pdf_template TEXT NOT NULL DEFAULT 'simple',
+                    created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL
         )
         """
@@ -184,10 +187,10 @@ def create_company_table() -> None:
                     bank_account_name, bank_account_number, bank_ifsc, upi_id,
                     logo_path, invoice_prefix, current_number, invoice_number_padding,
                     currency_symbol, default_payment_terms, terms_and_conditions,
-                    authorized_signatory_name, signature_path,
+                    authorized_signatory_name, signature_path, pdf_template,
                     created_at, updated_at
                 )
-                VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     1,
@@ -214,6 +217,7 @@ def create_company_table() -> None:
                     DEFAULT_COMPANY["terms_and_conditions"],
                     DEFAULT_COMPANY["authorized_signatory_name"],
                     DEFAULT_COMPANY["signature_path"],
+                    DEFAULT_COMPANY["pdf_template"],
                     now,
                     now,
                 ),
@@ -237,9 +241,9 @@ def get_company(owner_user_id: int | None = None) -> dict[str, Any]:
                     website, bank_name, bank_account_name, bank_account_number, bank_ifsc, upi_id,
                     logo_path, invoice_prefix, current_number, invoice_number_padding,
                     currency_symbol, default_payment_terms, terms_and_conditions,
-                    authorized_signatory_name, signature_path, created_at, updated_at
+                    authorized_signatory_name, signature_path, pdf_template, created_at, updated_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     owner_user_id,
@@ -266,6 +270,7 @@ def get_company(owner_user_id: int | None = None) -> dict[str, Any]:
                     DEFAULT_COMPANY["terms_and_conditions"],
                     DEFAULT_COMPANY["authorized_signatory_name"],
                     DEFAULT_COMPANY["signature_path"],
+                    DEFAULT_COMPANY["pdf_template"],
                     now,
                     now,
                 ),
@@ -304,6 +309,7 @@ def update_company(payload: dict[str, Any], owner_user_id: int | None = None) ->
         "terms_and_conditions",
         "authorized_signatory_name",
         "signature_path",
+        "pdf_template",
     ]
     current = get_company(owner_user_id)
     updates = {field: payload.get(field, current.get(field, "")) for field in allowed_fields}
@@ -323,7 +329,7 @@ def update_company(payload: dict[str, Any], owner_user_id: int | None = None) ->
                 upi_id = ?, logo_path = ?, invoice_prefix = ?, current_number = ?,
                 invoice_number_padding = ?, currency_symbol = ?,
                 default_payment_terms = ?, terms_and_conditions = ?,
-                authorized_signatory_name = ?, signature_path = ?, updated_at = ?
+                authorized_signatory_name = ?, signature_path = ?, pdf_template = ?, updated_at = ?
             WHERE id = ?
             """,
             (
@@ -350,6 +356,7 @@ def update_company(payload: dict[str, Any], owner_user_id: int | None = None) ->
                 updates["terms_and_conditions"],
                 updates["authorized_signatory_name"],
                 updates["signature_path"],
+                updates["pdf_template"],
                 now_iso(),
                 current.get("id", 1),
             ),

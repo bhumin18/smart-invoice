@@ -556,3 +556,72 @@ def get_invoice_rows_for_period(month: int, year: int, filters: dict[str, Any] |
             tuple(params),
         ).fetchall()
     return [dict(row) for row in rows]
+
+
+def get_dashboard_analytics(filters: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Return invoice analytics for dashboard charts."""
+    filters = filters or {}
+    owner_sql = ""
+    params: list[Any] = []
+    if filters.get("owner_user_id") and not filters.get("include_all"):
+        owner_sql = " AND owner_user_id = ?"
+        params.append(int(filters["owner_user_id"]))
+    with get_db_connection() as connection:
+        monthly_rows = connection.execute(
+            """
+            SELECT
+                strftime('%Y-%m', date) AS month,
+                COALESCE(SUM(total), 0) AS revenue,
+                COALESCE(SUM(gst_amount), 0) AS gst
+            FROM invoices
+            WHERE lower(status) != 'void'
+            """ + owner_sql + """
+            GROUP BY strftime('%Y-%m', date)
+            ORDER BY month DESC
+            LIMIT 12
+            """,
+            tuple(params),
+        ).fetchall()
+        status_rows = connection.execute(
+            """
+            SELECT lower(status) AS status, COUNT(*) AS count, COALESCE(SUM(total), 0) AS amount
+            FROM invoices
+            WHERE lower(status) != 'void'
+            """ + owner_sql + """
+            GROUP BY lower(status)
+            ORDER BY count DESC
+            """,
+            tuple(params),
+        ).fetchall()
+        client_rows = connection.execute(
+            """
+            SELECT client_name, COALESCE(SUM(total), 0) AS amount, COUNT(*) AS invoice_count
+            FROM invoices
+            WHERE lower(status) != 'void'
+            """ + owner_sql + """
+            GROUP BY client_name
+            ORDER BY amount DESC
+            LIMIT 5
+            """,
+            tuple(params),
+        ).fetchall()
+        overdue_rows = connection.execute(
+            """
+            SELECT invoice_number, client_name, due_date, balance_due
+            FROM invoices
+            WHERE lower(status) NOT IN ('void', 'paid')
+              AND COALESCE(balance_due, total) > 0
+              AND due_date != ''
+              AND due_date < date('now')
+            """ + owner_sql + """
+            ORDER BY due_date ASC
+            LIMIT 10
+            """,
+            tuple(params),
+        ).fetchall()
+    return {
+        "monthly": [dict(row) for row in reversed(monthly_rows)],
+        "status": [dict(row) for row in status_rows],
+        "top_clients": [dict(row) for row in client_rows],
+        "overdue": [dict(row) for row in overdue_rows],
+    }

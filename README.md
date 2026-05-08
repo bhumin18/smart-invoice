@@ -19,6 +19,11 @@ Production-ready full-stack invoicing and GST management app for Indian freelanc
 - Email invoice PDF through SMTP
 - Full backup, restore, Excel export, and JSON export
 - Invoice audit history for create, edit, payment, void, clone, and delete activity
+- Dashboard charts for revenue, GST, paid/unpaid status, top clients, and overdue invoices
+- CSV/Excel import for client and product/service masters
+- Recurring invoice profiles and payment reminder APIs
+- Admin overview with registration toggle, activity, user totals, and storage usage
+- OpenAPI JSON and API docs at `/api/docs`
 - Automated backend regression tests with pytest
 - YAML-based configuration
 - Docker setup for local deployment
@@ -60,26 +65,30 @@ Production-ready full-stack invoicing and GST management app for Indian freelanc
 
 ```text
 smart-invoice/
-├── backend/
-│   ├── app.py
-│   ├── config.yaml
-│   ├── config.production.yaml
-│   ├── database/
-│   ├── models/
-│   ├── routes/
-│   ├── services/
-│   ├── utils/
-│   ├── outputs/
-│   └── requirements.txt
-├── frontend/
-│   └── gst-gem-main/
-│       ├── src/
-│       ├── package.json
-│       └── vite.config.ts
-├── docs/
-│   └── images/
-├── docker-compose.yml
-└── README.md
+|-- backend/
+|   |-- app.py
+|   |-- config.yaml
+|   |-- config.production.yaml
+|   |-- database/
+|   |-- models/
+|   |-- routes/
+|   |-- services/
+|   |-- tests/
+|   |-- utils/
+|   |-- outputs/
+|   `-- requirements.txt
+|-- frontend/
+|   `-- gst-gem-main/
+|       |-- src/
+|       |-- package.json
+|       `-- vite.config.ts
+|-- docs/
+|   |-- DEPLOYMENT.md
+|   `-- images/
+|-- .github/workflows/ci.yml
+|-- docker-compose.yml
+|-- LICENSE
+`-- README.md
 ```
 
 ## Quick Start
@@ -226,10 +235,13 @@ GET             /api/auth/me
 POST            /api/auth/register
 POST            /api/auth/forgot-password
 POST            /api/auth/reset-password
+POST            /api/auth/verify-email
 POST            /api/auth/change-password
 
 GET             /api/users
 PUT             /api/users/<id>
+GET             /api/users/admin/overview
+PUT             /api/users/admin/settings
 
 GET/POST        /api/invoices
 GET/PUT/DELETE  /api/invoices/<id>
@@ -243,22 +255,34 @@ POST            /api/invoices/<id>/payments
 GET             /api/invoices/<id>/payments/<payment_id>/receipt
 
 GET/POST        /api/clients
+POST            /api/clients/import
 GET/PUT/DELETE  /api/clients/<id>
 
 GET/POST        /api/products
+POST            /api/products/import
 GET/PUT/DELETE  /api/products/<id>
+
+GET/POST        /api/recurring-invoices
+PUT/DELETE      /api/recurring-invoices/<id>
+POST            /api/recurring-invoices/run-due
+
+GET             /api/reminders/payments
+POST            /api/reminders/payments/send
 
 GET/POST        /api/company
 POST            /api/company/logo
 POST            /api/company/signature
 
 GET             /api/dashboard/summary
+GET             /api/dashboard/analytics
 GET             /api/reports/gst?month=5&year=2026
 GET             /api/backups/export
 POST            /api/backups/restore
 GET             /api/exports/data?format=xlsx
 GET             /api/exports/data?format=json
 GET             /api/config/public
+GET             /api/docs
+GET             /api/docs/openapi.json
 GET             /api/health
 ```
 

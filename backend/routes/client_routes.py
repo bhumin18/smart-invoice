@@ -7,6 +7,7 @@ import logging
 from flask import Blueprint, g, request
 
 from services.client_service import create_client, delete_client, get_client, get_clients, update_client
+from services.import_service import import_clients
 from utils.helpers import ValidationError, api_response
 
 
@@ -56,6 +57,22 @@ def create_client_route():
     except Exception as exc:
         logger.exception("Client creation failed")
         return api_response(False, {}, "Failed to create client", 500, {"error": str(exc)})
+
+
+@client_bp.post("/import")
+def import_clients_route():
+    """Import client master records from CSV or Excel."""
+    try:
+        return api_response(
+            True,
+            import_clients(request.files.get("file"), getattr(g, "current_user", {}) or {}),
+            "Clients imported successfully",
+        )
+    except ValidationError as exc:
+        return api_response(False, {}, exc.message, 400, exc.errors)
+    except Exception as exc:
+        logger.exception("Client import failed")
+        return api_response(False, {}, "Failed to import clients", 500, {"error": str(exc)})
 
 
 @client_bp.put("/<int:client_id>")

@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FileText, IndianRupee, Receipt, Plus, ArrowUpRight, WalletCards } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { BarChart, Bar, CartesianGrid, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell } from "recharts";
 
 export const Route = createFileRoute("/")({
   component: Dashboard,
@@ -41,6 +42,10 @@ function Dashboard() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["dashboard-summary"],
     queryFn: api.getDashboardSummary,
+  });
+  const { data: analytics } = useQuery({
+    queryKey: ["dashboard-analytics"],
+    queryFn: api.getDashboardAnalytics,
   });
 
   const invoices = data?.recentInvoices || [];
@@ -125,6 +130,82 @@ function Dashboard() {
           )}
         </CardContent>
       </Card>
+
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+        <Card className="xl:col-span-2">
+          <CardHeader>
+            <CardTitle>Monthly Revenue & GST</CardTitle>
+          </CardHeader>
+          <CardContent className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={analytics?.monthly || []}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip formatter={(value) => formatINR(Number(value))} />
+                <Line type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={2} />
+                <Line type="monotone" dataKey="gst" stroke="oklch(0.72 0.16 75)" strokeWidth={2} />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Paid vs Unpaid</CardTitle>
+          </CardHeader>
+          <CardContent className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={analytics?.status || []} dataKey="amount" nameKey="status" outerRadius={92} label>
+                  {(analytics?.status || []).map((_, index) => (
+                    <Cell key={index} fill={["#2563eb", "#16a34a", "#f59e0b", "#dc2626", "#64748b"][index % 5]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value) => formatINR(Number(value))} />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card className="xl:col-span-2">
+          <CardHeader>
+            <CardTitle>Top Clients</CardTitle>
+          </CardHeader>
+          <CardContent className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={analytics?.topClients || []}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="clientName" />
+                <YAxis />
+                <Tooltip formatter={(value) => formatINR(Number(value))} />
+                <Bar dataKey="amount" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Overdue Invoices</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {(analytics?.overdue || []).length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">No overdue invoices.</p>
+            ) : (
+              <div className="space-y-3">
+                {(analytics?.overdue || []).map((invoice) => (
+                  <div key={invoice.invoice_number} className="rounded-md border p-3">
+                    <div className="font-medium">{invoice.invoice_number}</div>
+                    <div className="text-xs text-muted-foreground">{invoice.client_name}</div>
+                    <div className="mt-1 text-sm font-semibold">{formatINR(invoice.balance_due)}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
