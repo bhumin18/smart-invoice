@@ -50,6 +50,7 @@ export type Invoice = {
   voidReason?: string;
   voidedAt?: string;
   payments?: InvoicePayment[];
+  attachments?: InvoiceAttachment[];
   createdAt?: string;
 };
 
@@ -60,6 +61,14 @@ export type InvoicePayment = {
   mode: string;
   reference?: string;
   notes?: string;
+  createdAt?: string;
+};
+
+export type InvoiceAttachment = {
+  id?: string | number;
+  fileName: string;
+  filePath?: string;
+  attachmentType: string;
   createdAt?: string;
 };
 
@@ -180,6 +189,26 @@ export type RecurringInvoice = {
   payload?: Record<string, unknown>;
 };
 
+export type PublicLink = {
+  token: string;
+  publicPath: string;
+  invoiceId: number;
+};
+
+export type PublicInvoice = {
+  invoiceNumber: string;
+  clientName: string;
+  date?: string;
+  dueDate?: string;
+  subtotal: number;
+  gstAmount: number;
+  total: number;
+  amountPaid: number;
+  balanceDue: number;
+  status?: string;
+  items: InvoiceItem[];
+};
+
 function normalizeItem(item: any): InvoiceItem {
   return {
     name: item.item_name ?? item.name ?? "",
@@ -225,7 +254,32 @@ function normalizeInvoice(invoice: any): Invoice {
           createdAt: payment.created_at ?? payment.createdAt ?? "",
         }))
       : [],
+    attachments: Array.isArray(invoice.attachments)
+      ? invoice.attachments.map((attachment: any) => ({
+          id: attachment.id,
+          fileName: attachment.file_name ?? attachment.fileName ?? "",
+          filePath: attachment.file_path ?? attachment.filePath ?? "",
+          attachmentType: attachment.attachment_type ?? attachment.attachmentType ?? "supporting",
+          createdAt: attachment.created_at ?? attachment.createdAt ?? "",
+        }))
+      : [],
     createdAt: invoice.created_at ?? invoice.createdAt,
+  };
+}
+
+function normalizePublicInvoice(invoice: any): PublicInvoice {
+  return {
+    invoiceNumber: invoice.invoice_number ?? invoice.invoiceNumber ?? "",
+    clientName: invoice.client_name ?? invoice.clientName ?? "",
+    date: invoice.date,
+    dueDate: invoice.due_date ?? invoice.dueDate,
+    subtotal: Number(invoice.subtotal ?? 0),
+    gstAmount: Number(invoice.gst_amount ?? invoice.gstAmount ?? 0),
+    total: Number(invoice.total ?? 0),
+    amountPaid: Number(invoice.amount_paid ?? invoice.amountPaid ?? 0),
+    balanceDue: Number(invoice.balance_due ?? invoice.balanceDue ?? 0),
+    status: invoice.status ?? "",
+    items: Array.isArray(invoice.items) ? invoice.items.map(normalizeItem) : [],
   };
 }
 
@@ -530,6 +584,18 @@ async function blobObjectUrl(path: string) {
   return URL.createObjectURL(await res.blob());
 }
 
+async function publicRequest<T>(path: string, opts: RequestInit = {}): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, opts);
+  const contentType = res.headers.get("content-type") || "";
+  const body = contentType.includes("application/json")
+    ? ((await res.json()) as ApiEnvelope<T>)
+    : null;
+  if (!res.ok || body?.success === false) {
+    throw new ApiError(body?.message || `Request failed (${res.status})`, body?.errors || {});
+  }
+  return (body ? body.data : (await res.text())) as T;
+}
+
 export const api = {
   tokenKey: TOKEN_KEY,
   login: async (username: string, password: string) => {
@@ -766,7 +832,7 @@ export const api = {
     const rows = await request<any[]>("/recurring-invoices");
     return rows.map(normalizeRecurring);
   },
-  createRecurringInvoice: async (data: { name: string; frequency: string; nextRunDate: string; invoice: Omit<Invoice, "id"> }) =>
+  createRecurringInvoice: async (data: { name: string; frequency: string; nextRunDate: string; active?: boolean; invoice: Omit<Invoice, "id"> }) =>
     normalizeRecurring(
       await request<any>("/recurring-invoices", {
         method: "POST",
@@ -774,6 +840,7 @@ export const api = {
           name: data.name,
           frequency: data.frequency,
           next_run_date: data.nextRunDate,
+          active: data.active ?? true,
           invoice: invoicePayload(data.invoice),
         }),
       }),
@@ -782,6 +849,54 @@ export const api = {
   getPaymentReminders: (days = 7) => request<any>(`/reminders/payments?days=${days}`),
   sendPaymentReminders: (days = 7) =>
     request<any>("/reminders/payments/send", { method: "POST", body: JSON.stringify({ days }) }),
+  getReminderSettings: () => request<any>("/reminders/settings"),
+  saveReminderSettings: (data: { autoEnabled: boolean; daysAhead: number; emailTemplate: string }) =>
+    request<any>("/reminders/settings", {
+      method: "PUT",
+      body: JSON.stringify({
+        auto_enabled: data.autoEnabled,
+        days_ahead: data.daysAhead,
+        email_template: data.emailTemplate,
+      }),
+    }),
+  runAutoReminders: () => request<any>("/reminders/run-auto", { method: "POST" }),
+  createPublicInvoiceLink: async (id: string): Promise<PublicLink> => {
+    const value = await request<any>(`/invoices/${id}/public-link`, { method: "POST" });
+    return {
+      token: value.token,
+      publicPath: value.public_path,
+      invoiceId: Number(value.invoice_id),
+    };
+  },
+  uploadInvoiceAttachment: async (id: string, file: File, type = "supporting") => {
+    const body = new FormData();
+    body.append("file", file);
+    body.append("type", type);
+    const res = await fetch(`${API_BASE}/invoices/${id}/attachments`, {
+      method: "POST",
+      headers: localStorage.getItem(TOKEN_KEY)
+        ? { Authorization: `Bearer ${localStorage.getItem(TOKEN_KEY)}` }
+        : {},
+      body,
+    });
+    const payload = (await res.json()) as ApiEnvelope<any>;
+    if (!res.ok || payload.success === false) throw new ApiError(payload.message || "Attachment upload failed", payload.errors || {});
+    return payload.data;
+  },
+  getPublicInvoice: async (token: string) => normalizePublicInvoice(await publicRequest<any>(`/portal/${token}`)),
+  downloadPublicInvoicePdf: (token: string, invoiceNumber = "invoice") =>
+    downloadBlob(`/portal/${token}/pdf`, `${invoiceNumber}.pdf`),
+  uploadPaymentProof: async (token: string, file: File) => {
+    const body = new FormData();
+    body.append("file", file);
+    const res = await fetch(`${API_BASE}/portal/${token}/payment-proof`, {
+      method: "POST",
+      body,
+    });
+    const payload = (await res.json()) as ApiEnvelope<any>;
+    if (!res.ok || payload.success === false) throw new ApiError(payload.message || "Payment proof upload failed", payload.errors || {});
+    return payload.data;
+  },
   listUsers: async () => {
     const users = await request<any[]>("/users");
     return users.map(normalizeUser);

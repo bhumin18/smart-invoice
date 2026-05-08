@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { ArrowLeft, Copy, Download, Eye, Mail, Pencil, Plus, Receipt, Save, Trash2 } from "lucide-react";
+import { ArrowLeft, Copy, Download, Eye, Link2, Mail, Paperclip, Pencil, Plus, Receipt, Save, Trash2, Upload } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
@@ -57,6 +57,7 @@ function InvoiceDetail() {
   const [emailMessage, setEmailMessage] = useState("");
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewUrl, setPreviewUrl] = useState("");
+  const [publicUrl, setPublicUrl] = useState("");
   const [form, setForm] = useState<Invoice>({
     clientName: "",
     items: [emptyRow()],
@@ -156,6 +157,26 @@ function InvoiceDetail() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const publicLink = useMutation({
+    mutationFn: () => api.createPublicInvoiceLink(id),
+    onSuccess: async (link) => {
+      const url = `${window.location.origin}${link.publicPath}`;
+      setPublicUrl(url);
+      await navigator.clipboard?.writeText(url);
+      toast.success("Client portal link copied");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const uploadAttachment = useMutation({
+    mutationFn: (file: File) => api.uploadInvoiceAttachment(id, file),
+    onSuccess: () => {
+      toast.success("Attachment uploaded");
+      qc.invalidateQueries({ queryKey: ["invoice", id] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   async function openPreview() {
     try {
       if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -242,6 +263,9 @@ function InvoiceDetail() {
               }
             >
               <Download className="h-4 w-4" /> Download PDF
+            </Button>
+            <Button variant="outline" onClick={() => publicLink.mutate()} disabled={publicLink.isPending}>
+              <Link2 className="h-4 w-4" /> Client Link
             </Button>
             <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
               <DialogTrigger asChild>
@@ -484,6 +508,52 @@ function InvoiceDetail() {
                     <DetailRow label="Supply Type" value={inv.supplyType || "-"} />
                     <DetailRow label="Place of Supply" value={inv.placeOfSupply || "-"} />
                   </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle>Client Portal & Attachments</CardTitle>
+                  <div>
+                    <Input
+                      id="invoice-attachment-upload"
+                      type="file"
+                      className="hidden"
+                      accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) uploadAttachment.mutate(file);
+                      }}
+                    />
+                    <Button type="button" variant="outline" onClick={() => document.getElementById("invoice-attachment-upload")?.click()} disabled={uploadAttachment.isPending}>
+                      <Upload className="h-4 w-4" />
+                      {uploadAttachment.isPending ? "Uploading..." : "Upload Attachment"}
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button type="button" variant="outline" onClick={() => publicLink.mutate()} disabled={publicLink.isPending}>
+                      <Link2 className="h-4 w-4" />
+                      {publicLink.isPending ? "Creating..." : "Copy Secure Client Link"}
+                    </Button>
+                    {publicUrl && <span className="text-xs text-muted-foreground break-all">{publicUrl}</span>}
+                  </div>
+                  {(inv.attachments || []).length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No supporting documents uploaded yet.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {(inv.attachments || []).map((attachment) => (
+                        <div key={String(attachment.id)} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                          <div className="flex min-w-0 items-center gap-2">
+                            <Paperclip className="h-4 w-4 shrink-0 text-muted-foreground" />
+                            <span className="truncate">{attachment.fileName}</span>
+                          </div>
+                          <span className="text-xs text-muted-foreground">{attachment.attachmentType}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 

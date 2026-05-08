@@ -2,7 +2,7 @@
 
 Production-ready full-stack invoicing and GST management app for Indian freelancers, agencies, and small businesses.
 
-![Dashboard Preview](docs/images/dashboard-preview.svg)
+![Dashboard Preview](docs/images/dashboard.png)
 
 ## Highlights
 
@@ -21,7 +21,10 @@ Production-ready full-stack invoicing and GST management app for Indian freelanc
 - Invoice audit history for create, edit, payment, void, clone, and delete activity
 - Dashboard charts for revenue, GST, paid/unpaid status, top clients, and overdue invoices
 - CSV/Excel import for client and product/service masters
-- Recurring invoice profiles and payment reminder APIs
+- Recurring invoice UI with client/product selection and due-run generation
+- Payment reminder settings, custom reminder templates, scheduler hook, and reminder history
+- Secure public client portal links for invoice view/download and payment-proof upload
+- Invoice attachments for work proof, PO documents, payment receipts, and supporting files
 - Admin overview with registration toggle, activity, user totals, and storage usage
 - OpenAPI JSON and API docs at `/api/docs`
 - Automated backend regression tests with pytest
@@ -33,11 +36,20 @@ Production-ready full-stack invoicing and GST management app for Indian freelanc
 
 ### Invoice PDF
 
-![Invoice Preview](docs/images/invoice-preview.svg)
+![Invoice Preview](docs/images/invoice-pdf-preview.png)
 
 ### Users and Permissions
 
-![Users Preview](docs/images/users-preview.svg)
+![Users Preview](docs/images/users-admin.png)
+
+Screenshots can be regenerated after starting backend and frontend:
+
+```powershell
+cd frontend/gst-gem-main
+npm install
+cd ../..
+node docs/capture-screenshots.mjs
+```
 
 ## Tech Stack
 
@@ -268,6 +280,14 @@ POST            /api/recurring-invoices/run-due
 
 GET             /api/reminders/payments
 POST            /api/reminders/payments/send
+GET/PUT         /api/reminders/settings
+POST            /api/reminders/run-auto
+
+POST            /api/invoices/<id>/public-link
+POST            /api/invoices/<id>/attachments
+GET             /api/portal/<token>
+GET             /api/portal/<token>/pdf
+POST            /api/portal/<token>/payment-proof
 
 GET/POST        /api/company
 POST            /api/company/logo
@@ -294,14 +314,14 @@ Current active adapter:
 SQLite
 ```
 
-The app includes configuration profiles for:
+The app includes configuration profiles and dependencies for:
 
 - SQLite
 - PostgreSQL
 - MySQL
 - MongoDB
 
-SQLite is the current working adapter because the model layer uses Python `sqlite3`. PostgreSQL/MySQL migration should use the SQLAlchemy scaffold:
+SQLite is the current working adapter because the model layer uses Python `sqlite3`. PostgreSQL/MySQL configuration is ready, but the repository layer still needs to be moved to SQLAlchemy before those engines can be activated safely:
 
 ```text
 backend/database/sqlalchemy_adapter.py
@@ -361,7 +381,7 @@ npm run build
 - Disable open registration if public access is not intended
 - Configure exact CORS origins
 - Use HTTPS in production
-- Prefer PostgreSQL for hosted multi-user deployment after migrating the repository layer
+- Prefer PostgreSQL for hosted multi-user deployment after migrating the repository layer from `sqlite3` to SQLAlchemy
 - Do not commit SQLite database, generated PDFs, uploaded logos, or backup zips
 - Revoke and rotate any GitHub or SMTP token that was accidentally printed or shared
 

@@ -15,6 +15,8 @@ INVOICE_COLUMNS = {
     "balance_due": "REAL NOT NULL DEFAULT 0",
     "void_reason": "TEXT",
     "voided_at": "TEXT",
+    "public_token": "TEXT",
+    "payment_proof_path": "TEXT",
 }
 
 
@@ -194,6 +196,20 @@ def create_invoice_tables() -> None:
             """
         )
         connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS invoice_attachments (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                invoice_id INTEGER NOT NULL,
+                owner_user_id INTEGER,
+                file_name TEXT NOT NULL,
+                file_path TEXT NOT NULL,
+                attachment_type TEXT NOT NULL DEFAULT 'supporting',
+                created_at TEXT NOT NULL,
+                FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE
+            )
+            """
+        )
+        connection.execute(
             "CREATE INDEX IF NOT EXISTS idx_invoices_invoice_number ON invoices(invoice_number)"
         )
         connection.execute(
@@ -202,6 +218,12 @@ def create_invoice_tables() -> None:
         connection.execute("CREATE INDEX IF NOT EXISTS idx_invoices_date ON invoices(date)")
         connection.execute(
             "CREATE INDEX IF NOT EXISTS idx_invoice_payments_invoice_id ON invoice_payments(invoice_id)"
+        )
+        connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_invoice_public_token ON invoices(public_token)"
+        )
+        connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_invoice_attachments_invoice_id ON invoice_attachments(invoice_id)"
         )
         connection.commit()
 
@@ -497,7 +519,43 @@ def get_invoice_by_id(invoice_id: int, owner_user_id: int | None = None, include
         return None
     invoice["items"] = get_invoice_items(invoice_id)
     invoice["payments"] = get_invoice_payments(invoice_id)
+    invoice["attachments"] = get_invoice_attachments(invoice_id)
     return invoice
+
+
+def get_invoice_by_public_token(token: str) -> dict[str, Any] | None:
+    """Return one invoice by public portal token."""
+    with get_db_connection() as connection:
+        row = connection.execute("SELECT * FROM invoices WHERE public_token = ?", (token.strip(),)).fetchone()
+    invoice = row_to_dict(row)
+    if invoice is None:
+        return None
+    invoice["items"] = get_invoice_items(int(invoice["id"]))
+    invoice["payments"] = get_invoice_payments(int(invoice["id"]))
+    invoice["attachments"] = get_invoice_attachments(int(invoice["id"]))
+    return invoice
+
+
+def set_invoice_public_token(invoice_id: int, token: str) -> dict[str, Any] | None:
+    """Persist a public invoice portal token."""
+    with get_db_connection() as connection:
+        connection.execute(
+            "UPDATE invoices SET public_token = ?, updated_at = ? WHERE id = ?",
+            (token, now_iso(), invoice_id),
+        )
+        connection.commit()
+    return get_invoice_by_id(invoice_id)
+
+
+def set_invoice_payment_proof(invoice_id: int, proof_path: str) -> dict[str, Any] | None:
+    """Persist client uploaded payment proof path."""
+    with get_db_connection() as connection:
+        connection.execute(
+            "UPDATE invoices SET payment_proof_path = ?, updated_at = ? WHERE id = ?",
+            (proof_path, now_iso(), invoice_id),
+        )
+        connection.commit()
+    return get_invoice_by_id(invoice_id)
 
 
 def update_invoice_pdf_path(invoice_id: int, pdf_path: str) -> dict[str, Any] | None:
@@ -531,6 +589,39 @@ def insert_invoice_payment(
             (invoice_id, payment_date, amount, payment_mode, reference, notes, now_iso()),
         )
         connection.commit()
+
+
+def insert_invoice_attachment(
+    invoice_id: int,
+    owner_user_id: int | None,
+    file_name: str,
+    file_path: str,
+    attachment_type: str = "supporting",
+) -> dict[str, Any]:
+    """Store invoice attachment metadata."""
+    with get_db_connection() as connection:
+        cursor = connection.execute(
+            """
+            INSERT INTO invoice_attachments (
+                invoice_id, owner_user_id, file_name, file_path, attachment_type, created_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (invoice_id, owner_user_id, file_name, file_path, attachment_type, now_iso()),
+        )
+        connection.commit()
+        row = connection.execute("SELECT * FROM invoice_attachments WHERE id = ?", (cursor.lastrowid,)).fetchone()
+    return dict(row)
+
+
+def get_invoice_attachments(invoice_id: int) -> list[dict[str, Any]]:
+    """Return attachments for an invoice."""
+    with get_db_connection() as connection:
+        rows = connection.execute(
+            "SELECT * FROM invoice_attachments WHERE invoice_id = ? ORDER BY id DESC",
+            (invoice_id,),
+        ).fetchall()
+    return [dict(row) for row in rows]
 
 
 def get_invoice_rows_for_period(month: int, year: int, filters: dict[str, Any] | None = None) -> list[dict[str, Any]]:

@@ -15,6 +15,7 @@ from models.company_model import create_company_table
 from models.invoice_model import create_invoice_tables
 from models.product_model import create_product_table
 from models.recurring_model import create_recurring_table
+from models.reminder_model import create_reminder_table
 from models.settings_model import create_settings_table
 from models.user_model import create_user_table
 from routes.auth_routes import auth_bp
@@ -27,6 +28,7 @@ from routes.export_routes import export_bp
 from routes.gst_routes import gst_bp
 from routes.invoice_routes import invoice_bp
 from routes.product_routes import product_bp
+from routes.portal_routes import portal_bp
 from routes.recurring_routes import recurring_bp
 from routes.reminder_routes import reminder_bp
 from routes.user_routes import user_bp
@@ -45,6 +47,7 @@ def init_database() -> None:
     create_audit_table()
     create_settings_table()
     create_recurring_table()
+    create_reminder_table()
 
 
 def create_app() -> Flask:
@@ -66,6 +69,7 @@ def create_app() -> Flask:
     app.register_blueprint(company_bp)
     app.register_blueprint(client_bp)
     app.register_blueprint(product_bp)
+    app.register_blueprint(portal_bp)
     app.register_blueprint(recurring_bp)
     app.register_blueprint(reminder_bp)
     app.register_blueprint(dashboard_bp)
@@ -93,7 +97,7 @@ def create_app() -> Flask:
             "/api/auth/reset-password",
             "/api/auth/verify-email",
         }
-        if request.path in public_paths:
+        if request.path in public_paths or request.path.startswith("/api/portal/"):
             return None
         if not request.path.startswith("/api/"):
             return None

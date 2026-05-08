@@ -1,4 +1,4 @@
-import { Outlet, Link, createRootRouteWithContext, HeadContent, Scripts } from "@tanstack/react-router";
+import { Outlet, Link, createRootRouteWithContext, HeadContent, Scripts, useRouterState } from "@tanstack/react-router";
 import { Moon, Sun } from "lucide-react";
 import type { FormEvent, ReactNode } from "react";
 import { useEffect, useState } from "react";
@@ -99,6 +99,7 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const path = useRouterState({ select: (state) => state.location.pathname });
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
@@ -147,6 +148,17 @@ function RootComponent() {
         <div className="flex min-h-screen items-center justify-center bg-background">
           <div className="text-sm text-muted-foreground">Loading...</div>
         </div>
+      </QueryClientProvider>
+    );
+  }
+
+  if (path.startsWith("/portal/")) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <main className="min-h-screen bg-background p-4 md:p-8">
+          <Outlet />
+        </main>
+        <Toaster richColors position="top-right" />
       </QueryClientProvider>
     );
   }

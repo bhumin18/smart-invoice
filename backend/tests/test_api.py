@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib
+from io import BytesIO
 import os
 import sys
 from pathlib import Path
@@ -179,3 +180,108 @@ def test_gst_breakdown_split():
     assert inter["cgst"] == 0.0
     assert inter["sgst"] == 0.0
     assert inter["igst"] == 180.0
+
+
+def test_recurring_imports_reminders_gst_report_and_portal(client):
+    """Cover recurring profiles, imports, reminders, GST export, portal links, and attachments."""
+    headers = _login(client)
+
+    client_csv = b"name,gstin,address,state,email\nRecurring Client,24ABCDE1234F1Z8,Ahmedabad,Gujarat,billing@example.com\n"
+    imported_clients = client.post(
+        "/api/clients/import",
+        data={"file": (BytesIO(client_csv), "clients.csv")},
+        headers=headers,
+        content_type="multipart/form-data",
+    )
+    assert imported_clients.status_code == 200
+    assert imported_clients.get_json()["data"]["created_count"] == 1
+
+    product_csv = b"name,description,hsn_sac,price,gst_rate,unit\nMonthly Support,Support plan,9983,1500,18,month\n"
+    imported_products = client.post(
+        "/api/products/import",
+        data={"file": (BytesIO(product_csv), "products.csv")},
+        headers=headers,
+        content_type="multipart/form-data",
+    )
+    assert imported_products.status_code == 200
+    assert imported_products.get_json()["data"]["created_count"] == 1
+
+    recurring_payload = {
+        "name": "Monthly Support",
+        "frequency": "monthly",
+        "next_run_date": "2026-05-01",
+        "invoice": _invoice_payload(),
+    }
+    recurring = client.post("/api/recurring-invoices", json=recurring_payload, headers=headers)
+    assert recurring.status_code == 201
+    assert recurring.get_json()["data"]["frequency"] == "monthly"
+
+    run_due = client.post("/api/recurring-invoices/run-due", headers=headers)
+    assert run_due.status_code == 200
+    assert "generated_count" in run_due.get_json()["data"]
+
+    invoice = client.post("/api/invoices", json=_invoice_payload(), headers=headers).get_json()["data"]
+    invoice_id = invoice["id"]
+
+    link = client.post(f"/api/invoices/{invoice_id}/public-link", headers=headers)
+    assert link.status_code == 200
+    token = link.get_json()["data"]["token"]
+    public_invoice = client.get(f"/api/portal/{token}")
+    assert public_invoice.status_code == 200
+    assert public_invoice.get_json()["data"]["invoice_number"] == invoice["invoice_number"]
+
+    attachment = client.post(
+        f"/api/invoices/{invoice_id}/attachments",
+        data={"file": (BytesIO(b"hello"), "work-proof.pdf")},
+        headers=headers,
+        content_type="multipart/form-data",
+    )
+    assert attachment.status_code == 201
+
+    proof = client.post(
+        f"/api/portal/{token}/payment-proof",
+        data={"file": (BytesIO(b"paid"), "payment-proof.pdf")},
+        content_type="multipart/form-data",
+    )
+    assert proof.status_code == 201
+
+    gst_report = client.get("/api/reports/gst?month=5&year=2026", headers=headers)
+    assert gst_report.status_code == 200
+    assert "spreadsheet" in gst_report.headers["Content-Type"] or "excel" in gst_report.headers["Content-Type"]
+
+    settings = client.put(
+        "/api/reminders/settings",
+        json={
+            "auto_enabled": True,
+            "days_ahead": 30,
+            "email_template": "Dear {client_name}, invoice {invoice_number} is due on {due_date}.",
+        },
+        headers=headers,
+    )
+    assert settings.status_code == 200
+    assert settings.get_json()["data"]["auto_enabled"] is True
+
+    sent = client.post("/api/reminders/payments/send", json={"days": 30}, headers=headers)
+    assert sent.status_code == 200
+    history = client.get("/api/reminders/settings", headers=headers)
+    assert history.status_code == 200
+    assert isinstance(history.get_json()["data"]["history"], list)
+
+
+def test_admin_settings_and_email_verification(client):
+    """Cover admin runtime settings and development email verification flow."""
+    headers = _login(client)
+    updated = client.put("/api/users/admin/settings", json={"registration_enabled": True}, headers=headers)
+    assert updated.status_code == 200
+
+    registered = client.post(
+        "/api/auth/register",
+        json={"username": "verify-user", "email": "verify@example.com", "password": "secret123"},
+    )
+    assert registered.status_code == 201
+    token = registered.get_json()["data"].get("verification_token")
+    assert token
+
+    verified = client.post("/api/auth/verify-email", json={"token": token})
+    assert verified.status_code == 200
+    assert verified.get_json()["data"]["email_verified"] is True

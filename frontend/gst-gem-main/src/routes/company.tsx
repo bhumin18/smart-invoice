@@ -267,6 +267,32 @@ function CompanyPage() {
                     <option value="letterhead">Letterhead</option>
                   </select>
                 </Field>
+                <div className="rounded-md border bg-muted/20 p-4">
+                  <div className="mb-3 text-sm font-semibold">Template Preview</div>
+                  <div className={`rounded-sm border bg-background p-4 text-xs ${form.pdfTemplate === "compact" ? "space-y-2" : "space-y-4"}`}>
+                    <div className="flex items-start justify-between gap-4 border-b pb-3">
+                      <div>
+                        <div className={form.pdfTemplate === "letterhead" ? "text-lg font-bold text-primary" : "text-base font-bold"}>
+                          {form.businessName || "Your Company"}
+                        </div>
+                        <div className="text-muted-foreground">{form.gstin || "GSTIN"}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-semibold">TAX INVOICE</div>
+                        <div>{form.invoicePrefix || "INV"}-0001</div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="col-span-2 rounded border p-2">Service / Product</div>
+                      <div className="rounded border p-2 text-right">Rs. 1,180.00</div>
+                    </div>
+                    <div className="flex justify-end">
+                      <div className="w-44 rounded border border-primary/30 bg-primary/5 p-2 text-right font-semibold">
+                        Total Rs. 1,180.00
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
                 <div className="grid md:grid-cols-[1fr_auto] gap-4 items-end">
                   <Field label="Logo Path">
