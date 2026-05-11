@@ -97,27 +97,51 @@ function ClientsPage() {
         <CardContent>
           <form onSubmit={submit} className="space-y-4">
             <Field label="Client Name *">
-              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+              <Input
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+              />
             </Field>
             <Field label="GSTIN">
-              <Input value={form.gstin || ""} onChange={(e) => setForm({ ...form, gstin: e.target.value })} />
+              <Input
+                value={form.gstin || ""}
+                onChange={(e) => setForm({ ...form, gstin: e.target.value })}
+              />
             </Field>
             <Field label="Address">
-              <Textarea rows={3} value={form.address || ""} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+              <Textarea
+                rows={3}
+                value={form.address || ""}
+                onChange={(e) => setForm({ ...form, address: e.target.value })}
+              />
             </Field>
             <div className="grid grid-cols-2 gap-3">
               <Field label="State">
-                <Input value={form.state || ""} onChange={(e) => setForm({ ...form, state: e.target.value })} />
+                <Input
+                  value={form.state || ""}
+                  onChange={(e) => setForm({ ...form, state: e.target.value })}
+                />
               </Field>
               <Field label="Phone">
-                <Input value={form.phone || ""} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+                <Input
+                  value={form.phone || ""}
+                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                />
               </Field>
             </div>
             <Field label="Email">
-              <Input type="email" value={form.email || ""} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+              <Input
+                type="email"
+                value={form.email || ""}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+              />
             </Field>
             <Field label="Notes">
-              <Textarea rows={2} value={form.notes || ""} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+              <Textarea
+                rows={2}
+                value={form.notes || ""}
+                onChange={(e) => setForm({ ...form, notes: e.target.value })}
+              />
             </Field>
             <div className="flex gap-2">
               <Button type="submit" disabled={save.isPending}>
@@ -125,7 +149,14 @@ function ClientsPage() {
                 {editingId ? "Save Client" : "Add Client"}
               </Button>
               {editingId && (
-                <Button type="button" variant="outline" onClick={() => { setEditingId(""); setForm(emptyClient); }}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setEditingId("");
+                    setForm(emptyClient);
+                  }}
+                >
                   Cancel
                 </Button>
               )}
@@ -137,7 +168,9 @@ function ClientsPage() {
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Clients</h1>
-          <p className="mt-1 text-muted-foreground">Save client details once and reuse them while creating invoices.</p>
+          <p className="mt-1 text-muted-foreground">
+            Save client details once and reuse them while creating invoices.
+          </p>
         </div>
         <Card>
           <CardHeader className="gap-4 md:flex-row md:items-center md:justify-between">
@@ -146,7 +179,12 @@ function ClientsPage() {
             </CardTitle>
             <div className="relative w-full md:w-80">
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search clients..." />
+              <Input
+                className="pl-9"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search clients..."
+              />
             </div>
             <div>
               <Input
@@ -159,7 +197,11 @@ function ClientsPage() {
                   if (file) importData.mutate(file);
                 }}
               />
-              <Button type="button" variant="outline" onClick={() => document.getElementById("client-import")?.click()}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => document.getElementById("client-import")?.click()}
+              >
                 <Upload className="h-4 w-4" /> Import
               </Button>
             </div>
@@ -167,7 +209,11 @@ function ClientsPage() {
           <CardContent>
             {error && <p className="text-sm text-destructive">{(error as Error).message}</p>}
             {isLoading ? (
-              <div className="space-y-2">{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
+              <div className="space-y-2">
+                {[...Array(4)].map((_, i) => (
+                  <Skeleton key={i} className="h-12 w-full" />
+                ))}
+              </div>
             ) : clients.length === 0 ? (
               <div className="py-12 text-center text-muted-foreground">No clients found.</div>
             ) : (
@@ -195,7 +241,12 @@ function ClientsPage() {
                           <Button size="icon" variant="ghost" onClick={() => edit(client)}>
                             <Pencil className="h-4 w-4" />
                           </Button>
-                          <Button size="icon" variant="ghost" className="text-destructive" onClick={() => remove.mutate(id)}>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="text-destructive"
+                            onClick={() => remove.mutate(id)}
+                          >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </TableCell>

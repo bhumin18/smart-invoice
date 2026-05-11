@@ -30,8 +30,18 @@ export const Route = createFileRoute("/reports")({
 });
 
 const months = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
 type RecurringItem = {
@@ -205,7 +215,9 @@ function ReportsPage() {
   });
 
   function patchRecurringItem(index: number, patch: Partial<RecurringItem>) {
-    setRecurringItems((items) => items.map((item, idx) => (idx === index ? { ...item, ...patch } : item)));
+    setRecurringItems((items) =>
+      items.map((item, idx) => (idx === index ? { ...item, ...patch } : item)),
+    );
   }
 
   const data = gstReport.data;
@@ -214,7 +226,9 @@ function ReportsPage() {
     <div className="max-w-6xl mx-auto space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">GST Report</h1>
-        <p className="text-muted-foreground mt-1">Generate monthly GST summaries, recurring invoices, and payment reminders.</p>
+        <p className="text-muted-foreground mt-1">
+          Generate monthly GST summaries, recurring invoices, and payment reminders.
+        </p>
       </div>
 
       <Card>
@@ -225,10 +239,14 @@ function ReportsPage() {
           <div className="space-y-2">
             <Label>Month</Label>
             <Select value={String(month)} onValueChange={(v) => setMonth(Number(v))}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 {months.map((mo, i) => (
-                  <SelectItem key={mo} value={String(i + 1)}>{mo}</SelectItem>
+                  <SelectItem key={mo} value={String(i + 1)}>
+                    {mo}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -236,16 +254,27 @@ function ReportsPage() {
           <div className="space-y-2">
             <Label>Year</Label>
             <Select value={String(year)} onValueChange={(v) => setYear(Number(v))}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 {Array.from({ length: 5 }).map((_, i) => {
                   const y = now.getFullYear() - 2 + i;
-                  return <SelectItem key={y} value={String(y)}>{y}</SelectItem>;
+                  return (
+                    <SelectItem key={y} value={String(y)}>
+                      {y}
+                    </SelectItem>
+                  );
                 })}
               </SelectContent>
             </Select>
           </div>
-          <Button onClick={() => gstReport.mutate()} disabled={gstReport.isPending} className="rounded-full" style={{ boxShadow: "var(--shadow-elegant)" }}>
+          <Button
+            onClick={() => gstReport.mutate()}
+            disabled={gstReport.isPending}
+            className="rounded-full"
+            style={{ boxShadow: "var(--shadow-elegant)" }}
+          >
             <BarChart3 className="h-4 w-4" />
             {gstReport.isPending ? "Generating..." : "Generate Report"}
           </Button>
@@ -258,11 +287,19 @@ function ReportsPage() {
             <CardTitle>Backup & Restore</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-3 md:flex-row md:items-center">
-            <Button variant="outline" onClick={() => exportData.mutate("xlsx")} disabled={exportData.isPending}>
+            <Button
+              variant="outline"
+              onClick={() => exportData.mutate("xlsx")}
+              disabled={exportData.isPending}
+            >
               <DatabaseBackup className="h-4 w-4" />
               Export Excel
             </Button>
-            <Button variant="outline" onClick={() => exportData.mutate("json")} disabled={exportData.isPending}>
+            <Button
+              variant="outline"
+              onClick={() => exportData.mutate("json")}
+              disabled={exportData.isPending}
+            >
               <DatabaseBackup className="h-4 w-4" />
               Export JSON
             </Button>
@@ -302,7 +339,12 @@ function ReportsPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Recurring Invoices</CardTitle>
-            <Button type="button" variant="outline" onClick={() => runRecurring.mutate()} disabled={runRecurring.isPending}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => runRecurring.mutate()}
+              disabled={runRecurring.isPending}
+            >
               Run Due
             </Button>
           </CardHeader>
@@ -316,10 +358,14 @@ function ReportsPage() {
                 <div className="space-y-2">
                   <Label>Client</Label>
                   <Select value={recurringClientId} onValueChange={setRecurringClientId}>
-                    <SelectTrigger><SelectValue placeholder="Select client" /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select client" />
+                    </SelectTrigger>
                     <SelectContent>
                       {(clients.data || []).map((client) => (
-                        <SelectItem key={String(client.id)} value={String(client.id)}>{client.name}</SelectItem>
+                        <SelectItem key={String(client.id)} value={String(client.id)}>
+                          {client.name}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -327,7 +373,9 @@ function ReportsPage() {
                 <div className="space-y-2">
                   <Label>Frequency</Label>
                   <Select value={recurringFrequency} onValueChange={setRecurringFrequency}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="monthly">Monthly</SelectItem>
                       <SelectItem value="quarterly">Quarterly</SelectItem>
@@ -337,14 +385,23 @@ function ReportsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>Next Run Date</Label>
-                  <Input type="date" value={recurringNextDate} onChange={(e) => setRecurringNextDate(e.target.value)} />
+                  <Input
+                    type="date"
+                    value={recurringNextDate}
+                    onChange={(e) => setRecurringNextDate(e.target.value)}
+                  />
                 </div>
               </div>
 
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <Label>Items</Label>
-                  <Button type="button" variant="outline" size="sm" onClick={() => setRecurringItems((items) => [...items, emptyRecurringItem()])}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setRecurringItems((items) => [...items, emptyRecurringItem()])}
+                  >
                     <Plus className="h-4 w-4" />
                     Add Item
                   </Button>
@@ -354,7 +411,9 @@ function ReportsPage() {
                     <Select
                       value={item.productId}
                       onValueChange={(value) => {
-                        const product = (products.data || []).find((row) => String(row.id) === value);
+                        const product = (products.data || []).find(
+                          (row) => String(row.id) === value,
+                        );
                         patchRecurringItem(index, {
                           productId: value,
                           name: product?.name || item.name,
@@ -365,17 +424,50 @@ function ReportsPage() {
                         });
                       }}
                     >
-                      <SelectTrigger><SelectValue placeholder="Product or service" /></SelectTrigger>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Product or service" />
+                      </SelectTrigger>
                       <SelectContent>
                         {(products.data || []).map((product) => (
-                          <SelectItem key={String(product.id)} value={String(product.id)}>{product.name}</SelectItem>
+                          <SelectItem key={String(product.id)} value={String(product.id)}>
+                            {product.name}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    <Input type="number" min={0.01} step="0.01" value={item.quantity} onChange={(e) => patchRecurringItem(index, { quantity: Number(e.target.value) })} />
-                    <Input type="number" min={0} step="0.01" value={item.price} onChange={(e) => patchRecurringItem(index, { price: Number(e.target.value) })} />
-                    <Input type="number" min={0} max={28} step="0.01" value={item.gst} onChange={(e) => patchRecurringItem(index, { gst: Number(e.target.value) })} />
-                    <Button type="button" variant="ghost" size="icon" disabled={recurringItems.length === 1} onClick={() => setRecurringItems((items) => items.filter((_, idx) => idx !== index))}>
+                    <Input
+                      type="number"
+                      min={0.01}
+                      step="0.01"
+                      value={item.quantity}
+                      onChange={(e) =>
+                        patchRecurringItem(index, { quantity: Number(e.target.value) })
+                      }
+                    />
+                    <Input
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={item.price}
+                      onChange={(e) => patchRecurringItem(index, { price: Number(e.target.value) })}
+                    />
+                    <Input
+                      type="number"
+                      min={0}
+                      max={28}
+                      step="0.01"
+                      value={item.gst}
+                      onChange={(e) => patchRecurringItem(index, { gst: Number(e.target.value) })}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      disabled={recurringItems.length === 1}
+                      onClick={() =>
+                        setRecurringItems((items) => items.filter((_, idx) => idx !== index))
+                      }
+                    >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
@@ -384,26 +476,36 @@ function ReportsPage() {
 
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <Select value={recurringActive} onValueChange={setRecurringActive}>
-                  <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="w-44">
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="true">Active</SelectItem>
                     <SelectItem value="false">Inactive</SelectItem>
                   </SelectContent>
                 </Select>
-                <Button type="button" onClick={() => createRecurring.mutate()} disabled={createRecurring.isPending}>
+                <Button
+                  type="button"
+                  onClick={() => createRecurring.mutate()}
+                  disabled={createRecurring.isPending}
+                >
                   {createRecurring.isPending ? "Creating..." : "Create Recurring Profile"}
                 </Button>
               </div>
             </div>
 
             {(recurring.data || []).length === 0 ? (
-              <p className="py-6 text-center text-sm text-muted-foreground">No recurring profiles yet.</p>
+              <p className="py-6 text-center text-sm text-muted-foreground">
+                No recurring profiles yet.
+              </p>
             ) : (
               <div className="space-y-3">
                 {(recurring.data || []).map((profile) => (
                   <div key={String(profile.id)} className="rounded-md border p-3">
                     <div className="font-medium">{profile.name}</div>
-                    <div className="text-xs text-muted-foreground">{profile.clientName} - {profile.frequency} - next {profile.nextRunDate}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {profile.clientName} - {profile.frequency} - next {profile.nextRunDate}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -414,7 +516,12 @@ function ReportsPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Payment Reminders</CardTitle>
-            <Button type="button" variant="outline" onClick={() => sendReminders.mutate()} disabled={sendReminders.isPending}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => sendReminders.mutate()}
+              disabled={sendReminders.isPending}
+            >
               Send Emails
             </Button>
           </CardHeader>
@@ -436,12 +543,22 @@ function ReportsPage() {
               <div className="grid gap-3 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Days Before Due Date</Label>
-                  <Input type="number" min={0} value={reminderDays} onChange={(e) => setReminderDays(Number(e.target.value))} />
+                  <Input
+                    type="number"
+                    min={0}
+                    value={reminderDays}
+                    onChange={(e) => setReminderDays(Number(e.target.value))}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Auto Scheduler</Label>
-                  <Select value={String(autoReminders)} onValueChange={(value) => setAutoReminders(value === "true")}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                  <Select
+                    value={String(autoReminders)}
+                    onValueChange={(value) => setAutoReminders(value === "true")}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="true">Enabled</SelectItem>
                       <SelectItem value="false">Disabled</SelectItem>
@@ -459,10 +576,20 @@ function ReportsPage() {
                 />
               </div>
               <div className="flex flex-wrap gap-2">
-                <Button type="button" variant="outline" onClick={() => saveReminderSettings.mutate()} disabled={saveReminderSettings.isPending}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => saveReminderSettings.mutate()}
+                  disabled={saveReminderSettings.isPending}
+                >
                   Save Reminder Settings
                 </Button>
-                <Button type="button" variant="outline" onClick={() => runAutoReminders.mutate()} disabled={runAutoReminders.isPending}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => runAutoReminders.mutate()}
+                  disabled={runAutoReminders.isPending}
+                >
                   Run Auto Scheduler
                 </Button>
               </div>
@@ -474,9 +601,14 @@ function ReportsPage() {
               ) : (
                 <div className="space-y-2">
                   {(reminderSettings.data?.history || []).slice(0, 6).map((row: any) => (
-                    <div key={row.id} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                    <div
+                      key={row.id}
+                      className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
+                    >
                       <span>{row.invoice_number || `Invoice #${row.invoice_id}`}</span>
-                      <span className="text-muted-foreground">{row.status} - {row.recipient_email || "no email"}</span>
+                      <span className="text-muted-foreground">
+                        {row.status} - {row.recipient_email || "no email"}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -490,20 +622,36 @@ function ReportsPage() {
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card>
-              <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground font-medium">Total Sales</CardTitle></CardHeader>
-              <CardContent><div className="text-2xl font-bold">{formatINR(data.totalSales)}</div></CardContent>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm text-muted-foreground font-medium">
+                  Total Sales
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatINR(data.totalSales)}</div>
+              </CardContent>
             </Card>
             <Card>
-              <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground font-medium">Total GST</CardTitle></CardHeader>
-              <CardContent><div className="text-2xl font-bold text-primary">{formatINR(data.totalGst)}</div></CardContent>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm text-muted-foreground font-medium">
+                  Total GST
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-primary">{formatINR(data.totalGst)}</div>
+              </CardContent>
             </Card>
           </div>
 
           <Card>
-            <CardHeader><CardTitle>Breakdown</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle>Breakdown</CardTitle>
+            </CardHeader>
             <CardContent>
               {data.rows.length === 0 ? (
-                <div className="py-12 text-center text-muted-foreground">No data for this period.</div>
+                <div className="py-12 text-center text-muted-foreground">
+                  No data for this period.
+                </div>
               ) : (
                 <Table>
                   <TableHeader>
@@ -521,7 +669,9 @@ function ReportsPage() {
                       <TableRow key={i}>
                         <TableCell className="font-medium">{r.invoiceNumber}</TableCell>
                         <TableCell>{r.clientName}</TableCell>
-                        <TableCell>{r.date ? new Date(r.date).toLocaleDateString("en-IN") : ""}</TableCell>
+                        <TableCell>
+                          {r.date ? new Date(r.date).toLocaleDateString("en-IN") : ""}
+                        </TableCell>
                         <TableCell className="text-right">{formatINR(r.taxable)}</TableCell>
                         <TableCell className="text-right">{formatINR(r.gst)}</TableCell>
                         <TableCell className="text-right">{formatINR(r.total)}</TableCell>

@@ -43,6 +43,25 @@ def openapi_spec() -> dict:
             "/invoices/{id}/pdf": {"get": {"summary": "Download invoice PDF"}},
             "/invoices/{id}/audit": {"get": {"summary": "Invoice audit history"}},
             "/invoices/{id}/payments": {"post": {"summary": "Record payment"}},
+            "/estimates": {
+                "get": {"summary": "List estimates"},
+                "post": {"summary": "Create estimate"},
+            },
+            "/estimates/{id}": {
+                "get": {"summary": "Get estimate"},
+                "put": {"summary": "Update estimate"},
+                "delete": {"summary": "Delete estimate"},
+            },
+            "/estimates/{id}/convert": {"post": {"summary": "Convert estimate to invoice"}},
+            "/expenses": {
+                "get": {"summary": "List expenses"},
+                "post": {"summary": "Create expense"},
+            },
+            "/expenses/{id}": {
+                "get": {"summary": "Get expense"},
+                "put": {"summary": "Update expense"},
+                "delete": {"summary": "Delete expense"},
+            },
             "/clients": {"get": {"summary": "List clients"}, "post": {"summary": "Create client"}},
             "/products": {"get": {"summary": "List products"}, "post": {"summary": "Create product"}},
             "/company": {"get": {"summary": "Get company settings"}, "post": {"summary": "Save company settings"}},

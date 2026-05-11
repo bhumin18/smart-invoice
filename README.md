@@ -33,6 +33,8 @@ Production-ready full-stack invoicing and GST management app for Indian freelanc
 - YAML-based configuration
 - Docker setup for local deployment
 - SQLite today, with SQLAlchemy migration scaffold for PostgreSQL/MySQL
+- Demo data seeding for portfolio screenshots and local testing
+- Estimate/quotation and expense tracking APIs
 
 ## Example Screens
 
@@ -74,6 +76,21 @@ node docs/capture-screenshots.mjs
 - Vite
 - Tailwind-style component system
 - Lucide icons
+
+## Architecture
+
+```mermaid
+flowchart LR
+    A[React + Vite Frontend] -->|Bearer token + JSON API| B[Flask API]
+    B --> C[(SQLite today)]
+    B --> D[ReportLab PDF invoices]
+    B --> E[Pandas + OpenPyXL reports]
+    B --> F[Local/S3-compatible storage]
+    B --> G[SMTP email workflows]
+    H[APScheduler jobs] --> B
+```
+
+PostgreSQL is tracked as the next major backend migration. The config and SQLAlchemy adapter scaffold already exist, but the active repository layer still uses `sqlite3`.
 
 ## Project Structure
 
@@ -149,6 +166,16 @@ Set this in `frontend/gst-gem-main/.env` for another backend URL.
 username: admin
 password: admin123
 ```
+
+## Seed Demo Data
+
+For a polished local demo with company settings, clients, products, invoices, an estimate, expenses, a recurring profile, and generated invoice PDFs:
+
+```powershell
+python backend/scripts/seed_demo.py --reset
+```
+
+Then start the backend and frontend normally.
 
 Change this before deployment:
 
@@ -267,6 +294,13 @@ POST            /api/invoices/<id>/void
 POST            /api/invoices/<id>/clone
 POST            /api/invoices/<id>/payments
 GET             /api/invoices/<id>/payments/<payment_id>/receipt
+
+GET/POST        /api/estimates
+GET/PUT/DELETE  /api/estimates/<id>
+POST            /api/estimates/<id>/convert
+
+GET/POST        /api/expenses
+GET/PUT/DELETE  /api/expenses/<id>
 
 GET/POST        /api/clients
 POST            /api/clients/import

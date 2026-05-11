@@ -125,8 +125,10 @@ function CompanyPage() {
     const nextErrors: Record<string, string> = {};
     if (!form.businessName.trim()) nextErrors.businessName = "Display name is required";
     if (form.email && !/^\S+@\S+\.\S+$/.test(form.email)) nextErrors.email = "Invalid email";
-    if (Number(form.nextInvoiceNumber || 0) < 1) nextErrors.nextInvoiceNumber = "Next sequence must be at least 1";
-    if (Number(form.invoiceNumberPadding || 0) < 1) nextErrors.invoiceNumberPadding = "Padding must be at least 1";
+    if (Number(form.nextInvoiceNumber || 0) < 1)
+      nextErrors.nextInvoiceNumber = "Next sequence must be at least 1";
+    if (Number(form.invoiceNumberPadding || 0) < 1)
+      nextErrors.invoiceNumberPadding = "Padding must be at least 1";
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) return;
     save.mutate(form);
@@ -184,15 +186,25 @@ function CompanyPage() {
             <form onSubmit={submit} className="space-y-6">
               <div className="grid md:grid-cols-2 gap-4">
                 <Field label="Display Name *" error={errors.businessName}>
-                  <Input value={form.businessName} onChange={(e) => set("businessName", e.target.value)} />
+                  <Input
+                    value={form.businessName}
+                    onChange={(e) => set("businessName", e.target.value)}
+                  />
                 </Field>
                 <Field label="Legal Name">
-                  <Input value={form.legalName || ""} onChange={(e) => set("legalName", e.target.value)} />
+                  <Input
+                    value={form.legalName || ""}
+                    onChange={(e) => set("legalName", e.target.value)}
+                  />
                 </Field>
               </div>
 
               <Field label="Business Address">
-                <Textarea rows={3} value={form.address} onChange={(e) => set("address", e.target.value)} />
+                <Textarea
+                  rows={3}
+                  value={form.address}
+                  onChange={(e) => set("address", e.target.value)}
+                />
               </Field>
 
               <div className="grid md:grid-cols-3 gap-4">
@@ -209,13 +221,20 @@ function CompanyPage() {
 
               <div className="grid md:grid-cols-3 gap-4">
                 <Field label="Email" error={errors.email}>
-                  <Input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} />
+                  <Input
+                    type="email"
+                    value={form.email}
+                    onChange={(e) => set("email", e.target.value)}
+                  />
                 </Field>
                 <Field label="Phone">
                   <Input value={form.phone} onChange={(e) => set("phone", e.target.value)} />
                 </Field>
                 <Field label="Website">
-                  <Input value={form.website || ""} onChange={(e) => set("website", e.target.value)} />
+                  <Input
+                    value={form.website || ""}
+                    onChange={(e) => set("website", e.target.value)}
+                  />
                 </Field>
               </div>
 
@@ -223,7 +242,10 @@ function CompanyPage() {
                 <h2 className="text-lg font-semibold">Invoice Branding</h2>
                 <div className="grid md:grid-cols-3 gap-4">
                   <Field label="Invoice Prefix">
-                    <Input value={form.invoicePrefix || "INV"} onChange={(e) => set("invoicePrefix", e.target.value)} />
+                    <Input
+                      value={form.invoicePrefix || "INV"}
+                      onChange={(e) => set("invoicePrefix", e.target.value)}
+                    />
                   </Field>
                   <Field label="Next Sequence Number" error={errors.nextInvoiceNumber}>
                     <Input
@@ -246,7 +268,10 @@ function CompanyPage() {
 
                 <div className="grid md:grid-cols-2 gap-4">
                   <Field label="Currency Symbol">
-                    <Input value={form.currencySymbol || "Rs."} onChange={(e) => set("currencySymbol", e.target.value)} />
+                    <Input
+                      value={form.currencySymbol || "Rs."}
+                      onChange={(e) => set("currencySymbol", e.target.value)}
+                    />
                   </Field>
                   <Field label="Default Payment Terms">
                     <Input
@@ -269,10 +294,18 @@ function CompanyPage() {
                 </Field>
                 <div className="rounded-md border bg-muted/20 p-4">
                   <div className="mb-3 text-sm font-semibold">Template Preview</div>
-                  <div className={`rounded-sm border bg-background p-4 text-xs ${form.pdfTemplate === "compact" ? "space-y-2" : "space-y-4"}`}>
+                  <div
+                    className={`rounded-sm border bg-background p-4 text-xs ${form.pdfTemplate === "compact" ? "space-y-2" : "space-y-4"}`}
+                  >
                     <div className="flex items-start justify-between gap-4 border-b pb-3">
                       <div>
-                        <div className={form.pdfTemplate === "letterhead" ? "text-lg font-bold text-primary" : "text-base font-bold"}>
+                        <div
+                          className={
+                            form.pdfTemplate === "letterhead"
+                              ? "text-lg font-bold text-primary"
+                              : "text-base font-bold"
+                          }
+                        >
                           {form.businessName || "Your Company"}
                         </div>
                         <div className="text-muted-foreground">{form.gstin || "GSTIN"}</div>
@@ -296,10 +329,15 @@ function CompanyPage() {
 
                 <div className="grid md:grid-cols-[1fr_auto] gap-4 items-end">
                   <Field label="Logo Path">
-                    <Input value={form.logoPath || ""} onChange={(e) => set("logoPath", e.target.value)} />
+                    <Input
+                      value={form.logoPath || ""}
+                      onChange={(e) => set("logoPath", e.target.value)}
+                    />
                   </Field>
                   <div>
-                    <Label htmlFor="logo-upload" className="sr-only">Upload Logo</Label>
+                    <Label htmlFor="logo-upload" className="sr-only">
+                      Upload Logo
+                    </Label>
                     <Input
                       id="logo-upload"
                       type="file"
@@ -327,10 +365,16 @@ function CompanyPage() {
                 <h2 className="text-lg font-semibold">Payment Details</h2>
                 <div className="grid md:grid-cols-2 gap-4">
                   <Field label="Bank Name">
-                    <Input value={form.bankName || ""} onChange={(e) => set("bankName", e.target.value)} />
+                    <Input
+                      value={form.bankName || ""}
+                      onChange={(e) => set("bankName", e.target.value)}
+                    />
                   </Field>
                   <Field label="Account Name">
-                    <Input value={form.bankAccountName || ""} onChange={(e) => set("bankAccountName", e.target.value)} />
+                    <Input
+                      value={form.bankAccountName || ""}
+                      onChange={(e) => set("bankAccountName", e.target.value)}
+                    />
                   </Field>
                 </div>
                 <div className="grid md:grid-cols-3 gap-4">
@@ -341,10 +385,16 @@ function CompanyPage() {
                     />
                   </Field>
                   <Field label="IFSC">
-                    <Input value={form.bankIfsc || ""} onChange={(e) => set("bankIfsc", e.target.value)} />
+                    <Input
+                      value={form.bankIfsc || ""}
+                      onChange={(e) => set("bankIfsc", e.target.value)}
+                    />
                   </Field>
                   <Field label="UPI ID">
-                    <Input value={form.upiId || ""} onChange={(e) => set("upiId", e.target.value)} />
+                    <Input
+                      value={form.upiId || ""}
+                      onChange={(e) => set("upiId", e.target.value)}
+                    />
                   </Field>
                 </div>
                 <Field label="Terms and Conditions">
@@ -375,7 +425,9 @@ function CompanyPage() {
                   </Field>
                 </div>
                 <div>
-                  <Label htmlFor="signature-upload" className="sr-only">Upload Signature</Label>
+                  <Label htmlFor="signature-upload" className="sr-only">
+                    Upload Signature
+                  </Label>
                   <Input
                     id="signature-upload"
                     type="file"
@@ -399,7 +451,12 @@ function CompanyPage() {
               </section>
 
               <div className="flex justify-end">
-                <Button type="submit" disabled={save.isPending} className="rounded-full" style={{ boxShadow: "var(--shadow-elegant)" }}>
+                <Button
+                  type="submit"
+                  disabled={save.isPending}
+                  className="rounded-full"
+                  style={{ boxShadow: "var(--shadow-elegant)" }}
+                >
                   {save.isPending ? "Saving..." : "Save Company Settings"}
                 </Button>
               </div>
@@ -411,15 +468,7 @@ function CompanyPage() {
   );
 }
 
-function Field({
-  label,
-  error,
-  children,
-}: {
-  label: string;
-  error?: string;
-  children: ReactNode;
-}) {
+function Field({ label, error, children }: { label: string; error?: string; children: ReactNode }) {
   return (
     <div className="space-y-2">
       <Label>{label}</Label>

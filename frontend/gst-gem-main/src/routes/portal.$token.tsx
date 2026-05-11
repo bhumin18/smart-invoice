@@ -50,7 +50,9 @@ function ClientPortalPage() {
   });
 
   if (invoice.isLoading) {
-    return <div className="mx-auto max-w-4xl text-sm text-muted-foreground">Loading invoice...</div>;
+    return (
+      <div className="mx-auto max-w-4xl text-sm text-muted-foreground">Loading invoice...</div>
+    );
   }
 
   if (invoice.error || !invoice.data) {
@@ -111,7 +113,9 @@ function ClientPortalPage() {
                   <TableRow key={index}>
                     <TableCell>
                       <div className="font-medium">{item.name}</div>
-                      {item.description && <div className="text-xs text-muted-foreground">{item.description}</div>}
+                      {item.description && (
+                        <div className="text-xs text-muted-foreground">{item.description}</div>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">{item.quantity}</TableCell>
                     <TableCell className="text-right">{formatINR(item.price)}</TableCell>
@@ -132,13 +136,19 @@ function ClientPortalPage() {
         <CardContent className="flex flex-col gap-3 md:flex-row md:items-center">
           <Button
             type="button"
-            onClick={() => api.downloadPublicInvoicePdf(token, inv.invoiceNumber).catch((e: Error) => toast.error(e.message))}
+            onClick={() =>
+              api
+                .downloadPublicInvoicePdf(token, inv.invoiceNumber)
+                .catch((e: Error) => toast.error(e.message))
+            }
           >
             <Download className="h-4 w-4" />
             Download PDF
           </Button>
           <div>
-            <Label htmlFor="payment-proof" className="sr-only">Upload Payment Proof</Label>
+            <Label htmlFor="payment-proof" className="sr-only">
+              Upload Payment Proof
+            </Label>
             <Input
               id="payment-proof"
               type="file"
@@ -149,7 +159,12 @@ function ClientPortalPage() {
                 if (file) uploadProof.mutate(file);
               }}
             />
-            <Button type="button" variant="outline" disabled={uploadProof.isPending} onClick={() => document.getElementById("payment-proof")?.click()}>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={uploadProof.isPending}
+              onClick={() => document.getElementById("payment-proof")?.click()}
+            >
               <Upload className="h-4 w-4" />
               {uploadProof.isPending ? "Uploading..." : "Upload Payment Proof"}
             </Button>
@@ -184,8 +199,18 @@ function ClientPortalPage() {
                 <div className="whitespace-pre-line">{inv.clientPortalMessage}</div>
               </div>
             )}
-            <Textarea rows={5} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Share payment details or questions about this invoice." />
-            <Button type="button" variant="outline" onClick={() => sendMessage.mutate()} disabled={sendMessage.isPending || !message.trim()}>
+            <Textarea
+              rows={5}
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Share payment details or questions about this invoice."
+            />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => sendMessage.mutate()}
+              disabled={sendMessage.isPending || !message.trim()}
+            >
               {sendMessage.isPending ? "Sending..." : "Send Message"}
             </Button>
           </CardContent>

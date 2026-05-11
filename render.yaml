@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: smart-invoice-api
+    env: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: AUTH_ENABLED
+        value: "true"
+      - key: AUTH_ALLOW_REGISTRATION
+        value: "false"
+      - key: DATABASE_ENGINE
+        value: sqlite
+      - key: SECRET_KEY
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+

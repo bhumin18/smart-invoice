@@ -15,7 +15,6 @@ backend/outputs/*
 !backend/outputs/.gitkeep
 
 # Environment / secrets
-.env
 *.local
 backend/.env
 frontend/gst-gem-main/.env
@@ -30,3 +29,5 @@ frontend/gst-gem-main/.wrangler/
 *.log
 Thumbs.db
 .DS_Store
+config.bat
+node_modules

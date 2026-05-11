@@ -7,11 +7,49 @@ import { ApiError, api, formatINR, type Invoice, type InvoiceItem } from "@/lib/
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { ArrowLeft, Copy, Download, Eye, Link2, Mail, Paperclip, Pencil, Plus, Receipt, Save, Trash2, Upload } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  ArrowLeft,
+  Copy,
+  Download,
+  Eye,
+  Link2,
+  Mail,
+  Paperclip,
+  Pencil,
+  Plus,
+  Receipt,
+  Save,
+  Trash2,
+  Upload,
+} from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -35,7 +73,11 @@ function InvoiceDetail() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const { data: inv, isLoading, error } = useQuery({
+  const {
+    data: inv,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["invoice", id],
     queryFn: () => api.getInvoice(id),
   });
@@ -83,7 +125,9 @@ function InvoiceDetail() {
     });
     setPaymentAmount(Number(inv.balanceDue ?? inv.total ?? 0));
     setEmailSubject(`Invoice ${inv.invoiceNumber || ""}`);
-    setEmailMessage(`Dear ${inv.clientName},\n\nPlease find attached invoice ${inv.invoiceNumber || ""}.\n\nThank you.`);
+    setEmailMessage(
+      `Dear ${inv.clientName},\n\nPlease find attached invoice ${inv.invoiceNumber || ""}.\n\nThank you.`,
+    );
   }, [inv]);
 
   const updateInvoice = useMutation({
@@ -150,7 +194,8 @@ function InvoiceDetail() {
   });
 
   const emailInvoice = useMutation({
-    mutationFn: () => api.emailInvoice(id, { toEmail: emailTo, subject: emailSubject, message: emailMessage }),
+    mutationFn: () =>
+      api.emailInvoice(id, { toEmail: emailTo, subject: emailSubject, message: emailMessage }),
     onSuccess: () => {
       toast.success("Invoice email sent");
       setEmailOpen(false);
@@ -164,7 +209,9 @@ function InvoiceDetail() {
       const url = `${window.location.origin}${link.publicPath}`;
       setPublicUrl(url);
       await navigator.clipboard?.writeText(url);
-      toast.success(`Client portal link copied${link.expiresAt ? `, expires ${link.expiresAt}` : ""}`);
+      toast.success(
+        `Client portal link copied${link.expiresAt ? `, expires ${link.expiresAt}` : ""}`,
+      );
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -180,7 +227,8 @@ function InvoiceDetail() {
   });
 
   const reviewProof = useMutation({
-    mutationFn: (status: "approved" | "rejected" | "pending_review") => api.reviewPaymentProof(id, status),
+    mutationFn: (status: "approved" | "rejected" | "pending_review") =>
+      api.reviewPaymentProof(id, status),
     onSuccess: (updated) => {
       qc.setQueryData(["invoice", id], updated);
       toast.success("Payment proof review updated");
@@ -228,14 +276,18 @@ function InvoiceDetail() {
 
   function validate() {
     const nextErrors: Record<string, string> = {};
-    if (!String(form.invoiceNumber || "").trim()) nextErrors.invoice_number = "Invoice number is required";
+    if (!String(form.invoiceNumber || "").trim())
+      nextErrors.invoice_number = "Invoice number is required";
     if (!String(form.clientName || "").trim()) nextErrors.client_name = "Client name is required";
     if (!(form.items || []).length) nextErrors.items = "At least one item is required";
     (form.items || []).forEach((item, index) => {
       if (!item.name.trim()) nextErrors[`items[${index}].item_name`] = "Item name is required";
-      if (Number(item.quantity || 0) <= 0) nextErrors[`items[${index}].quantity`] = "Quantity must be greater than zero";
-      if (Number(item.price || 0) < 0) nextErrors[`items[${index}].price`] = "Price must be zero or more";
-      if (Number(item.gst || 0) < 0 || Number(item.gst || 0) > 28) nextErrors[`items[${index}].gst_rate`] = "GST must be between 0 and 28";
+      if (Number(item.quantity || 0) <= 0)
+        nextErrors[`items[${index}].quantity`] = "Quantity must be greater than zero";
+      if (Number(item.price || 0) < 0)
+        nextErrors[`items[${index}].price`] = "Price must be zero or more";
+      if (Number(item.gst || 0) < 0 || Number(item.gst || 0) > 28)
+        nextErrors[`items[${index}].gst_rate`] = "GST must be between 0 and 28";
     });
     return nextErrors;
   }
@@ -248,9 +300,13 @@ function InvoiceDetail() {
     updateInvoice.mutate(form as Omit<Invoice, "id">);
   }
 
-  const subtotal = (form.items || []).reduce((sum, item) => sum + Number(item.quantity || 0) * Number(item.price || 0), 0);
+  const subtotal = (form.items || []).reduce(
+    (sum, item) => sum + Number(item.quantity || 0) * Number(item.price || 0),
+    0,
+  );
   const gstAmount = (form.items || []).reduce(
-    (sum, item) => sum + (Number(item.quantity || 0) * Number(item.price || 0) * Number(item.gst || 0)) / 100,
+    (sum, item) =>
+      sum + (Number(item.quantity || 0) * Number(item.price || 0) * Number(item.gst || 0)) / 100,
     0,
   );
   const total = subtotal + gstAmount;
@@ -272,19 +328,29 @@ function InvoiceDetail() {
             >
               <Pencil className="h-4 w-4" /> {isEditing ? "Cancel Edit" : "Edit Invoice"}
             </Button>
-            <Button variant="outline" onClick={() => cloneInvoice.mutate(id)} disabled={cloneInvoice.isPending}>
+            <Button
+              variant="outline"
+              onClick={() => cloneInvoice.mutate(id)}
+              disabled={cloneInvoice.isPending}
+            >
               <Copy className="h-4 w-4" /> Clone
             </Button>
             <Button
               onClick={() =>
-                api.downloadInvoicePdf(id, inv.invoiceNumber || "invoice").catch((downloadError: Error) => {
-                  toast.error(downloadError.message);
-                })
+                api
+                  .downloadInvoicePdf(id, inv.invoiceNumber || "invoice")
+                  .catch((downloadError: Error) => {
+                    toast.error(downloadError.message);
+                  })
               }
             >
               <Download className="h-4 w-4" /> Download PDF
             </Button>
-            <Button variant="outline" onClick={() => publicLink.mutate()} disabled={publicLink.isPending}>
+            <Button
+              variant="outline"
+              onClick={() => publicLink.mutate()}
+              disabled={publicLink.isPending}
+            >
               <Link2 className="h-4 w-4" /> Client Link
             </Button>
             <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
@@ -298,7 +364,11 @@ function InvoiceDetail() {
                   <DialogTitle>Invoice PDF Preview</DialogTitle>
                 </DialogHeader>
                 {previewUrl ? (
-                  <iframe title="Invoice PDF Preview" src={previewUrl} className="h-[75vh] w-full rounded-md border" />
+                  <iframe
+                    title="Invoice PDF Preview"
+                    src={previewUrl}
+                    className="h-[75vh] w-full rounded-md border"
+                  />
                 ) : (
                   <div className="flex h-[75vh] items-center justify-center text-sm text-muted-foreground">
                     Loading preview...
@@ -318,20 +388,31 @@ function InvoiceDetail() {
                 </DialogHeader>
                 <div className="space-y-4">
                   <Field label="To Email">
-                    <Input type="email" value={emailTo} onChange={(e) => setEmailTo(e.target.value)} placeholder="client@example.com" />
+                    <Input
+                      type="email"
+                      value={emailTo}
+                      onChange={(e) => setEmailTo(e.target.value)}
+                      placeholder="client@example.com"
+                    />
                   </Field>
                   <Field label="Subject">
                     <Input value={emailSubject} onChange={(e) => setEmailSubject(e.target.value)} />
                   </Field>
                   <Field label="Message">
-                    <Textarea rows={6} value={emailMessage} onChange={(e) => setEmailMessage(e.target.value)} />
+                    <Textarea
+                      rows={6}
+                      value={emailMessage}
+                      onChange={(e) => setEmailMessage(e.target.value)}
+                    />
                   </Field>
                   <p className="text-xs text-muted-foreground">
                     Email must be enabled in backend/config.yaml under the email section.
                   </p>
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setEmailOpen(false)}>Cancel</Button>
+                  <Button variant="outline" onClick={() => setEmailOpen(false)}>
+                    Cancel
+                  </Button>
                   <Button onClick={() => emailInvoice.mutate()} disabled={emailInvoice.isPending}>
                     {emailInvoice.isPending ? "Sending..." : "Send Email"}
                   </Button>
@@ -344,7 +425,9 @@ function InvoiceDetail() {
 
       {error && (
         <Card className="border-destructive/50 bg-destructive/5">
-          <CardContent className="py-4 text-sm text-destructive">{(error as Error).message}</CardContent>
+          <CardContent className="py-4 text-sm text-destructive">
+            {(error as Error).message}
+          </CardContent>
         </Card>
       )}
 
@@ -356,7 +439,9 @@ function InvoiceDetail() {
             <CardHeader>
               <div className="flex items-start justify-between flex-wrap gap-4">
                 <div>
-                  <CardTitle className="text-2xl">{inv.invoiceNumber || `#${id.slice(-6)}`}</CardTitle>
+                  <CardTitle className="text-2xl">
+                    {inv.invoiceNumber || `#${id.slice(-6)}`}
+                  </CardTitle>
                   <p className="text-muted-foreground mt-1">
                     Invoice date: {inv.date ? new Date(inv.date).toLocaleDateString("en-IN") : ""}
                   </p>
@@ -388,27 +473,50 @@ function InvoiceDetail() {
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <Field label="Invoice Number">
-                    <Input value={form.invoiceNumber || ""} onChange={(e) => set("invoiceNumber", e.target.value)} />
+                    <Input
+                      value={form.invoiceNumber || ""}
+                      onChange={(e) => set("invoiceNumber", e.target.value)}
+                    />
                     {errors.invoice_number && <ErrorText message={errors.invoice_number} />}
                   </Field>
                   <Field label="Invoice Date">
-                    <Input type="date" value={form.date || ""} onChange={(e) => set("date", e.target.value)} />
+                    <Input
+                      type="date"
+                      value={form.date || ""}
+                      onChange={(e) => set("date", e.target.value)}
+                    />
                   </Field>
                   <Field label="Due Date">
-                    <Input type="date" value={form.dueDate || ""} onChange={(e) => set("dueDate", e.target.value)} />
+                    <Input
+                      type="date"
+                      value={form.dueDate || ""}
+                      onChange={(e) => set("dueDate", e.target.value)}
+                    />
                   </Field>
                   <Field label="Client Name">
-                    <Input value={form.clientName || ""} onChange={(e) => set("clientName", e.target.value)} />
+                    <Input
+                      value={form.clientName || ""}
+                      onChange={(e) => set("clientName", e.target.value)}
+                    />
                     {errors.client_name && <ErrorText message={errors.client_name} />}
                   </Field>
                   <Field label="Client GSTIN">
-                    <Input value={form.clientGSTIN || ""} onChange={(e) => set("clientGSTIN", e.target.value)} />
+                    <Input
+                      value={form.clientGSTIN || ""}
+                      onChange={(e) => set("clientGSTIN", e.target.value)}
+                    />
                   </Field>
                   <Field label="Payment Terms">
-                    <Input value={form.paymentTerms || ""} onChange={(e) => set("paymentTerms", e.target.value)} />
+                    <Input
+                      value={form.paymentTerms || ""}
+                      onChange={(e) => set("paymentTerms", e.target.value)}
+                    />
                   </Field>
                   <Field label="Place of Supply">
-                    <Input value={form.placeOfSupply || ""} onChange={(e) => set("placeOfSupply", e.target.value)} />
+                    <Input
+                      value={form.placeOfSupply || ""}
+                      onChange={(e) => set("placeOfSupply", e.target.value)}
+                    />
                   </Field>
                   <Field label="Supply Type">
                     <select
@@ -434,7 +542,11 @@ function InvoiceDetail() {
                   </Field>
                   <div className="md:col-span-3">
                     <Field label="Client Address">
-                      <Textarea rows={3} value={form.clientAddress || ""} onChange={(e) => set("clientAddress", e.target.value)} />
+                      <Textarea
+                        rows={3}
+                        value={form.clientAddress || ""}
+                        onChange={(e) => set("clientAddress", e.target.value)}
+                      />
                     </Field>
                   </div>
                 </CardContent>
@@ -443,7 +555,12 @@ function InvoiceDetail() {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>Items</CardTitle>
-                  <Button type="button" variant="outline" size="sm" onClick={() => set("items", [...(form.items || []), emptyRow()])}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => set("items", [...(form.items || []), emptyRow()])}
+                  >
                     <Plus className="h-4 w-4" /> Add Item
                   </Button>
                 </CardHeader>
@@ -453,36 +570,83 @@ function InvoiceDetail() {
                     <div key={index} className="rounded-lg border p-3 space-y-3">
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-start">
                         <div className="md:col-span-4">
-                          <Input value={item.name} onChange={(e) => updateItem(index, { name: e.target.value })} placeholder="Item name" />
-                          {errors[`items[${index}].item_name`] && <ErrorText message={errors[`items[${index}].item_name`]} />}
+                          <Input
+                            value={item.name}
+                            onChange={(e) => updateItem(index, { name: e.target.value })}
+                            placeholder="Item name"
+                          />
+                          {errors[`items[${index}].item_name`] && (
+                            <ErrorText message={errors[`items[${index}].item_name`]} />
+                          )}
                         </div>
                         <div className="md:col-span-2">
-                          <Input value={item.hsnSac || ""} onChange={(e) => updateItem(index, { hsnSac: e.target.value })} placeholder="HSN/SAC" />
+                          <Input
+                            value={item.hsnSac || ""}
+                            onChange={(e) => updateItem(index, { hsnSac: e.target.value })}
+                            placeholder="HSN/SAC"
+                          />
                         </div>
                         <div className="md:col-span-2">
-                          <Input type="number" min={0} step="0.01" value={item.quantity} onChange={(e) => updateItem(index, { quantity: Number(e.target.value) })} />
-                          {errors[`items[${index}].quantity`] && <ErrorText message={errors[`items[${index}].quantity`]} />}
+                          <Input
+                            type="number"
+                            min={0}
+                            step="0.01"
+                            value={item.quantity}
+                            onChange={(e) =>
+                              updateItem(index, { quantity: Number(e.target.value) })
+                            }
+                          />
+                          {errors[`items[${index}].quantity`] && (
+                            <ErrorText message={errors[`items[${index}].quantity`]} />
+                          )}
                         </div>
                         <div className="md:col-span-2">
-                          <Input type="number" min={0} step="0.01" value={item.price} onChange={(e) => updateItem(index, { price: Number(e.target.value) })} />
-                          {errors[`items[${index}].price`] && <ErrorText message={errors[`items[${index}].price`]} />}
+                          <Input
+                            type="number"
+                            min={0}
+                            step="0.01"
+                            value={item.price}
+                            onChange={(e) => updateItem(index, { price: Number(e.target.value) })}
+                          />
+                          {errors[`items[${index}].price`] && (
+                            <ErrorText message={errors[`items[${index}].price`]} />
+                          )}
                         </div>
                         <div className="md:col-span-1">
-                          <Input type="number" min={0} max={28} step="0.01" value={item.gst} onChange={(e) => updateItem(index, { gst: Number(e.target.value) })} />
-                          {errors[`items[${index}].gst_rate`] && <ErrorText message={errors[`items[${index}].gst_rate`]} />}
+                          <Input
+                            type="number"
+                            min={0}
+                            max={28}
+                            step="0.01"
+                            value={item.gst}
+                            onChange={(e) => updateItem(index, { gst: Number(e.target.value) })}
+                          />
+                          {errors[`items[${index}].gst_rate`] && (
+                            <ErrorText message={errors[`items[${index}].gst_rate`]} />
+                          )}
                         </div>
                         <Button
                           type="button"
                           size="icon"
                           variant="ghost"
                           className="text-destructive"
-                          onClick={() => set("items", (form.items || []).filter((_, idx) => idx !== index))}
+                          onClick={() =>
+                            set(
+                              "items",
+                              (form.items || []).filter((_, idx) => idx !== index),
+                            )
+                          }
                           disabled={(form.items || []).length === 1}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
-                      <Textarea rows={2} value={item.description || ""} onChange={(e) => updateItem(index, { description: e.target.value })} placeholder="Optional item description" />
+                      <Textarea
+                        rows={2}
+                        value={item.description || ""}
+                        onChange={(e) => updateItem(index, { description: e.target.value })}
+                        placeholder="Optional item description"
+                      />
                     </div>
                   ))}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -498,13 +662,18 @@ function InvoiceDetail() {
                   <CardTitle>Notes</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <Textarea rows={3} value={form.notes || ""} onChange={(e) => set("notes", e.target.value)} />
+                  <Textarea
+                    rows={3}
+                    value={form.notes || ""}
+                    onChange={(e) => set("notes", e.target.value)}
+                  />
                 </CardContent>
               </Card>
 
               <div className="flex justify-end">
                 <Button type="submit" disabled={updateInvoice.isPending}>
-                  <Save className="h-4 w-4" /> {updateInvoice.isPending ? "Saving..." : "Save Changes"}
+                  <Save className="h-4 w-4" />{" "}
+                  {updateInvoice.isPending ? "Saving..." : "Save Changes"}
                 </Button>
               </div>
             </form>
@@ -518,8 +687,14 @@ function InvoiceDetail() {
                   <div>
                     <div className="text-xs uppercase text-muted-foreground mb-1">Bill To</div>
                     <div className="font-semibold">{inv.clientName}</div>
-                    {inv.clientGSTIN && <div className="text-sm text-muted-foreground">GSTIN: {inv.clientGSTIN}</div>}
-                    {inv.clientAddress && <div className="mt-2 whitespace-pre-line text-sm text-muted-foreground">{inv.clientAddress}</div>}
+                    {inv.clientGSTIN && (
+                      <div className="text-sm text-muted-foreground">GSTIN: {inv.clientGSTIN}</div>
+                    )}
+                    {inv.clientAddress && (
+                      <div className="mt-2 whitespace-pre-line text-sm text-muted-foreground">
+                        {inv.clientAddress}
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-2 text-sm">
                     <DetailRow label="Invoice Date" value={inv.date || "-"} />
@@ -545,7 +720,12 @@ function InvoiceDetail() {
                         if (file) uploadAttachment.mutate(file);
                       }}
                     />
-                    <Button type="button" variant="outline" onClick={() => document.getElementById("invoice-attachment-upload")?.click()} disabled={uploadAttachment.isPending}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => document.getElementById("invoice-attachment-upload")?.click()}
+                      disabled={uploadAttachment.isPending}
+                    >
                       <Upload className="h-4 w-4" />
                       {uploadAttachment.isPending ? "Uploading..." : "Upload Attachment"}
                     </Button>
@@ -554,7 +734,9 @@ function InvoiceDetail() {
                 <CardContent className="space-y-4">
                   <div className="flex flex-wrap items-center gap-2">
                     <div className="flex items-center gap-2">
-                      <Label htmlFor="public-expiry" className="text-xs">Expiry days</Label>
+                      <Label htmlFor="public-expiry" className="text-xs">
+                        Expiry days
+                      </Label>
                       <Input
                         id="public-expiry"
                         type="number"
@@ -564,14 +746,26 @@ function InvoiceDetail() {
                         onChange={(e) => setPublicExpiryDays(Number(e.target.value))}
                       />
                     </div>
-                    <Button type="button" variant="outline" onClick={() => publicLink.mutate()} disabled={publicLink.isPending}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => publicLink.mutate()}
+                      disabled={publicLink.isPending}
+                    >
                       <Link2 className="h-4 w-4" />
                       {publicLink.isPending ? "Creating..." : "Copy Secure Client Link"}
                     </Button>
-                    <Button type="button" variant="outline" onClick={() => revokePublicLink.mutate()} disabled={revokePublicLink.isPending || !inv.publicTokenExpiresAt}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => revokePublicLink.mutate()}
+                      disabled={revokePublicLink.isPending || !inv.publicTokenExpiresAt}
+                    >
                       Revoke Link
                     </Button>
-                    {publicUrl && <span className="text-xs text-muted-foreground break-all">{publicUrl}</span>}
+                    {publicUrl && (
+                      <span className="text-xs text-muted-foreground break-all">{publicUrl}</span>
+                    )}
                   </div>
                   <div className="grid gap-2 text-xs text-muted-foreground md:grid-cols-3">
                     <span>Expires: {inv.publicTokenExpiresAt || "-"}</span>
@@ -580,27 +774,50 @@ function InvoiceDetail() {
                   </div>
                   {inv.clientPortalMessage && (
                     <div className="rounded-md border bg-muted/30 p-3 text-sm">
-                      <div className="mb-1 text-xs font-medium uppercase text-muted-foreground">Client Message</div>
+                      <div className="mb-1 text-xs font-medium uppercase text-muted-foreground">
+                        Client Message
+                      </div>
                       <div className="whitespace-pre-line">{inv.clientPortalMessage}</div>
                     </div>
                   )}
                   {inv.paymentProofStatus && inv.paymentProofStatus !== "not_uploaded" && (
                     <div className="flex flex-wrap gap-2">
-                      <Button type="button" variant="outline" size="sm" onClick={() => reviewProof.mutate("approved")}>Approve Proof</Button>
-                      <Button type="button" variant="outline" size="sm" onClick={() => reviewProof.mutate("rejected")}>Reject Proof</Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => reviewProof.mutate("approved")}
+                      >
+                        Approve Proof
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => reviewProof.mutate("rejected")}
+                      >
+                        Reject Proof
+                      </Button>
                     </div>
                   )}
                   {(inv.attachments || []).length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No supporting documents uploaded yet.</p>
+                    <p className="text-sm text-muted-foreground">
+                      No supporting documents uploaded yet.
+                    </p>
                   ) : (
                     <div className="space-y-2">
                       {(inv.attachments || []).map((attachment) => (
-                        <div key={String(attachment.id)} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                        <div
+                          key={String(attachment.id)}
+                          className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
+                        >
                           <div className="flex min-w-0 items-center gap-2">
                             <Paperclip className="h-4 w-4 shrink-0 text-muted-foreground" />
                             <span className="truncate">{attachment.fileName}</span>
                           </div>
-                          <span className="text-xs text-muted-foreground">{attachment.attachmentType}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {attachment.attachmentType}
+                          </span>
                         </div>
                       ))}
                     </div>
@@ -640,7 +857,11 @@ function InvoiceDetail() {
                           <TableRow key={index}>
                             <TableCell>
                               <div className="font-medium">{item.name}</div>
-                              {item.description && <div className="text-xs text-muted-foreground mt-1">{item.description}</div>}
+                              {item.description && (
+                                <div className="text-xs text-muted-foreground mt-1">
+                                  {item.description}
+                                </div>
+                              )}
                             </TableCell>
                             <TableCell className="text-right">{item.quantity}</TableCell>
                             <TableCell className="text-right">{formatINR(item.price)}</TableCell>
@@ -687,8 +908,14 @@ function InvoiceDetail() {
                                 title="Download receipt"
                                 onClick={() =>
                                   api
-                                    .downloadPaymentReceipt(id, String(payment.paymentId), inv.invoiceNumber || "invoice")
-                                    .catch((receiptError: Error) => toast.error(receiptError.message))
+                                    .downloadPaymentReceipt(
+                                      id,
+                                      String(payment.paymentId),
+                                      inv.invoiceNumber || "invoice",
+                                    )
+                                    .catch((receiptError: Error) =>
+                                      toast.error(receiptError.message),
+                                    )
                                 }
                               >
                                 <Receipt className="h-4 w-4" />
@@ -707,13 +934,27 @@ function InvoiceDetail() {
               {String(inv.status || "").toLowerCase() !== "void" && (
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
                   <Field label="Payment Amount">
-                    <Input type="number" min={0} step="0.01" value={paymentAmount} onChange={(e) => setPaymentAmount(Number(e.target.value))} />
+                    <Input
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={paymentAmount}
+                      onChange={(e) => setPaymentAmount(Number(e.target.value))}
+                    />
                   </Field>
                   <Field label="Payment Date">
-                    <Input type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} />
+                    <Input
+                      type="date"
+                      value={paymentDate}
+                      onChange={(e) => setPaymentDate(e.target.value)}
+                    />
                   </Field>
                   <Field label="Mode">
-                    <select className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm" value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)}>
+                    <select
+                      className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                      value={paymentMode}
+                      onChange={(e) => setPaymentMode(e.target.value)}
+                    >
                       <option>Bank Transfer</option>
                       <option>UPI</option>
                       <option>Cash</option>
@@ -723,7 +964,10 @@ function InvoiceDetail() {
                     </select>
                   </Field>
                   <Field label="Reference">
-                    <Input value={paymentReference} onChange={(e) => setPaymentReference(e.target.value)} />
+                    <Input
+                      value={paymentReference}
+                      onChange={(e) => setPaymentReference(e.target.value)}
+                    />
                   </Field>
                   <Button onClick={() => recordPayment.mutate()} disabled={recordPayment.isPending}>
                     Record Payment
@@ -732,7 +976,11 @@ function InvoiceDetail() {
               )}
               {String(inv.status || "").toLowerCase() !== "void" && (
                 <Field label="Payment Notes">
-                  <Textarea rows={2} value={paymentNotes} onChange={(e) => setPaymentNotes(e.target.value)} />
+                  <Textarea
+                    rows={2}
+                    value={paymentNotes}
+                    onChange={(e) => setPaymentNotes(e.target.value)}
+                  />
                 </Field>
               )}
             </CardContent>
@@ -745,7 +993,10 @@ function InvoiceDetail() {
             <CardContent className="flex flex-wrap gap-3">
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="outline" disabled={String(inv.status || "").toLowerCase() === "void"}>
+                  <Button
+                    variant="outline"
+                    disabled={String(inv.status || "").toLowerCase() === "void"}
+                  >
                     Void Invoice
                   </Button>
                 </AlertDialogTrigger>
@@ -753,12 +1004,18 @@ function InvoiceDetail() {
                   <AlertDialogHeader>
                     <AlertDialogTitle>Void this invoice?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      The invoice will stay in the system, but it will be marked void and excluded from GST reports.
+                      The invoice will stay in the system, but it will be marked void and excluded
+                      from GST reports.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <div className="space-y-2">
                     <Label htmlFor="void-reason">Void reason</Label>
-                    <Input id="void-reason" value={voidReason} onChange={(e) => setVoidReason(e.target.value)} placeholder="Optional reason" />
+                    <Input
+                      id="void-reason"
+                      value={voidReason}
+                      onChange={(e) => setVoidReason(e.target.value)}
+                      placeholder="Optional reason"
+                    />
                   </div>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
@@ -771,9 +1028,7 @@ function InvoiceDetail() {
 
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="destructive">
-                    Delete Invoice
-                  </Button>
+                  <Button variant="destructive">Delete Invoice</Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
@@ -784,7 +1039,10 @@ function InvoiceDetail() {
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => deleteInvoice.mutate(id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    <AlertDialogAction
+                      onClick={() => deleteInvoice.mutate(id)}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
                       Delete
                     </AlertDialogAction>
                   </AlertDialogFooter>
@@ -812,9 +1070,13 @@ function InvoiceDetail() {
                   <TableBody>
                     {auditLogs.map((log) => (
                       <TableRow key={log.id}>
-                        <TableCell className="font-medium">{log.action.replace(/_/g, " ")}</TableCell>
+                        <TableCell className="font-medium">
+                          {log.action.replace(/_/g, " ")}
+                        </TableCell>
                         <TableCell>{log.actorUsername || "-"}</TableCell>
-                        <TableCell>{log.createdAt ? new Date(log.createdAt).toLocaleString("en-IN") : "-"}</TableCell>
+                        <TableCell>
+                          {log.createdAt ? new Date(log.createdAt).toLocaleString("en-IN") : "-"}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

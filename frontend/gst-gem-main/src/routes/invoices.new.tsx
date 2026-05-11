@@ -1,7 +1,15 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ApiError, api, formatINR, type Client, type Invoice, type InvoiceItem, type Product } from "@/lib/api";
+import {
+  ApiError,
+  api,
+  formatINR,
+  type Client,
+  type Invoice,
+  type InvoiceItem,
+  type Product,
+} from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -112,9 +120,7 @@ function NewInvoice() {
         ? company.defaultPaymentTerms || "Due within 15 days"
         : current,
     );
-    setPlaceOfSupply((current) =>
-      current === "Gujarat" ? company.state || current : current,
-    );
+    setPlaceOfSupply((current) => (current === "Gujarat" ? company.state || current : current));
   }, [company]);
 
   const subtotal = items.reduce((s, i) => s + (i.quantity || 0) * (i.price || 0), 0);
@@ -198,7 +204,8 @@ function NewInvoice() {
     if (items.length === 0) errs.items = "Add at least one item";
     items.forEach((it, i) => {
       if (!it.name.trim()) errs[`item-${i}-item_name`] = "Item name required";
-      if (!it.quantity || it.quantity <= 0) errs[`item-${i}-quantity`] = "Quantity must be greater than 0";
+      if (!it.quantity || it.quantity <= 0)
+        errs[`item-${i}-quantity`] = "Quantity must be greater than 0";
       if (it.price < 0) errs[`item-${i}-price`] = "Price cannot be negative";
       if (it.gst < 0 || it.gst > 28) errs[`item-${i}-gst_rate`] = "GST must be between 0 and 28";
     });
@@ -290,7 +297,9 @@ function NewInvoice() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Create Invoice</h1>
-          <p className="text-muted-foreground mt-1">Fill in the details to generate a GST invoice.</p>
+          <p className="text-muted-foreground mt-1">
+            Fill in the details to generate a GST invoice.
+          </p>
         </div>
         <Button type="button" variant="outline" onClick={fillDemo}>
           <Wand2 className="h-4 w-4" /> Fill Demo
@@ -320,16 +329,30 @@ function NewInvoice() {
                   Use Next
                 </Button>
               </div>
-              {errors.invoiceNumber && <p className="text-xs text-destructive">{errors.invoiceNumber}</p>}
+              {errors.invoiceNumber && (
+                <p className="text-xs text-destructive">{errors.invoiceNumber}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="date">Invoice Date *</Label>
-              <Input id="date" type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} />
-              {errors.invoiceDate && <p className="text-xs text-destructive">{errors.invoiceDate}</p>}
+              <Input
+                id="date"
+                type="date"
+                value={invoiceDate}
+                onChange={(e) => setInvoiceDate(e.target.value)}
+              />
+              {errors.invoiceDate && (
+                <p className="text-xs text-destructive">{errors.invoiceDate}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="due">Due Date</Label>
-              <Input id="due" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+              <Input
+                id="due"
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="status">Status</Label>
@@ -347,7 +370,11 @@ function NewInvoice() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="terms">Payment Terms</Label>
-              <Input id="terms" value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)} />
+              <Input
+                id="terms"
+                value={paymentTerms}
+                onChange={(e) => setPaymentTerms(e.target.value)}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="supply">Supply Type</Label>
@@ -363,7 +390,12 @@ function NewInvoice() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="place">Place of Supply</Label>
-              <Input id="place" value={placeOfSupply} onChange={(e) => setPlaceOfSupply(e.target.value)} placeholder="Karnataka" />
+              <Input
+                id="place"
+                value={placeOfSupply}
+                onChange={(e) => setPlaceOfSupply(e.target.value)}
+                placeholder="Karnataka"
+              />
             </div>
           </CardContent>
         </Card>
@@ -385,7 +417,8 @@ function NewInvoice() {
                   <option value="">Select saved client...</option>
                   {clients.map((client: Client) => (
                     <option key={String(client.id ?? client.name)} value={String(client.id ?? "")}>
-                      {client.name}{client.gstin ? ` - ${client.gstin}` : ""}
+                      {client.name}
+                      {client.gstin ? ` - ${client.gstin}` : ""}
                     </option>
                   ))}
                 </select>
@@ -393,16 +426,32 @@ function NewInvoice() {
             )}
             <div className="space-y-2">
               <Label htmlFor="cn">Client Name *</Label>
-              <Input id="cn" value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="Acme Pvt Ltd" />
+              <Input
+                id="cn"
+                value={clientName}
+                onChange={(e) => setClientName(e.target.value)}
+                placeholder="Acme Pvt Ltd"
+              />
               {errors.clientName && <p className="text-xs text-destructive">{errors.clientName}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="gstin">Client GSTIN</Label>
-              <Input id="gstin" value={clientGSTIN} onChange={(e) => setClientGSTIN(e.target.value)} placeholder="22AAAAA0000A1Z5" />
+              <Input
+                id="gstin"
+                value={clientGSTIN}
+                onChange={(e) => setClientGSTIN(e.target.value)}
+                placeholder="22AAAAA0000A1Z5"
+              />
             </div>
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor="address">Billing Address</Label>
-              <Textarea id="address" rows={3} value={clientAddress} onChange={(e) => setClientAddress(e.target.value)} placeholder="Client address" />
+              <Textarea
+                id="address"
+                rows={3}
+                value={clientAddress}
+                onChange={(e) => setClientAddress(e.target.value)}
+                placeholder="Client address"
+              />
             </div>
           </CardContent>
         </Card>
@@ -410,7 +459,12 @@ function NewInvoice() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Items</CardTitle>
-            <Button type="button" size="sm" variant="outline" onClick={() => setItems((p) => [...p, emptyRow()])}>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => setItems((p) => [...p, emptyRow()])}
+            >
               <Plus className="h-4 w-4" /> Add Item
             </Button>
           </CardHeader>
@@ -425,7 +479,10 @@ function NewInvoice() {
               <div />
             </div>
             {items.map((it, i) => (
-              <div key={i} className="space-y-2 rounded-lg border border-border/60 p-3 md:border-0 md:p-0">
+              <div
+                key={i}
+                className="space-y-2 rounded-lg border border-border/60 p-3 md:border-0 md:p-0"
+              >
                 {products.length > 0 && (
                   <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-2">
                     <select
@@ -435,7 +492,10 @@ function NewInvoice() {
                     >
                       <option value="">Use saved product/service...</option>
                       {products.map((product: Product) => (
-                        <option key={String(product.id ?? product.name)} value={String(product.id ?? "")}>
+                        <option
+                          key={String(product.id ?? product.name)}
+                          value={String(product.id ?? "")}
+                        >
                           {product.name} - {formatINR(product.price)} - GST {product.gstRate}%
                         </option>
                       ))}
@@ -447,21 +507,63 @@ function NewInvoice() {
                 )}
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-start">
                   <div className="md:col-span-4">
-                    <Input value={it.name} onChange={(e) => update(i, { name: e.target.value })} placeholder="Item name" />
-                    {errors[`item-${i}-item_name`] && <p className="text-xs text-destructive mt-1">{errors[`item-${i}-item_name`]}</p>}
+                    <Input
+                      value={it.name}
+                      onChange={(e) => update(i, { name: e.target.value })}
+                      placeholder="Item name"
+                    />
+                    {errors[`item-${i}-item_name`] && (
+                      <p className="text-xs text-destructive mt-1">
+                        {errors[`item-${i}-item_name`]}
+                      </p>
+                    )}
                   </div>
-                  <Input className="md:col-span-2" value={it.hsnSac || ""} onChange={(e) => update(i, { hsnSac: e.target.value })} placeholder="9983" />
+                  <Input
+                    className="md:col-span-2"
+                    value={it.hsnSac || ""}
+                    onChange={(e) => update(i, { hsnSac: e.target.value })}
+                    placeholder="9983"
+                  />
                   <div className="md:col-span-1">
-                    <Input type="number" min={0} step="0.01" value={it.quantity} onChange={(e) => update(i, { quantity: Number(e.target.value) })} />
-                    {errors[`item-${i}-quantity`] && <p className="text-xs text-destructive mt-1">{errors[`item-${i}-quantity`]}</p>}
+                    <Input
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={it.quantity}
+                      onChange={(e) => update(i, { quantity: Number(e.target.value) })}
+                    />
+                    {errors[`item-${i}-quantity`] && (
+                      <p className="text-xs text-destructive mt-1">
+                        {errors[`item-${i}-quantity`]}
+                      </p>
+                    )}
                   </div>
                   <div className="md:col-span-2">
-                    <Input type="number" min={0} step="0.01" value={it.price} onChange={(e) => update(i, { price: Number(e.target.value) })} />
-                    {errors[`item-${i}-price`] && <p className="text-xs text-destructive mt-1">{errors[`item-${i}-price`]}</p>}
+                    <Input
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={it.price}
+                      onChange={(e) => update(i, { price: Number(e.target.value) })}
+                    />
+                    {errors[`item-${i}-price`] && (
+                      <p className="text-xs text-destructive mt-1">{errors[`item-${i}-price`]}</p>
+                    )}
                   </div>
                   <div className="md:col-span-2">
-                    <Input type="number" min={0} max={28} step="0.01" value={it.gst} onChange={(e) => update(i, { gst: Number(e.target.value) })} />
-                    {errors[`item-${i}-gst_rate`] && <p className="text-xs text-destructive mt-1">{errors[`item-${i}-gst_rate`]}</p>}
+                    <Input
+                      type="number"
+                      min={0}
+                      max={28}
+                      step="0.01"
+                      value={it.gst}
+                      onChange={(e) => update(i, { gst: Number(e.target.value) })}
+                    />
+                    {errors[`item-${i}-gst_rate`] && (
+                      <p className="text-xs text-destructive mt-1">
+                        {errors[`item-${i}-gst_rate`]}
+                      </p>
+                    )}
                   </div>
                   <Button
                     type="button"
@@ -490,7 +592,12 @@ function NewInvoice() {
             <CardTitle>Notes</CardTitle>
           </CardHeader>
           <CardContent>
-            <Textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Payment terms or customer note" />
+            <Textarea
+              rows={3}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Payment terms or customer note"
+            />
           </CardContent>
         </Card>
 
@@ -515,7 +622,12 @@ function NewInvoice() {
           <Button type="button" variant="outline" onClick={() => navigate({ to: "/invoices" })}>
             Cancel
           </Button>
-          <Button type="submit" disabled={create.isPending} className="rounded-full" style={{ boxShadow: "var(--shadow-elegant)" }}>
+          <Button
+            type="submit"
+            disabled={create.isPending}
+            className="rounded-full"
+            style={{ boxShadow: "var(--shadow-elegant)" }}
+          >
             {create.isPending ? "Generating..." : "Generate Invoice"}
           </Button>
         </div>

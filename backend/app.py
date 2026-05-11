@@ -13,6 +13,8 @@ from config import APP_DEBUG, CORS_ALLOW_ALL, CORS_ORIGINS, MAX_CONTENT_LENGTH, 
 from models.audit_model import create_audit_table
 from models.client_model import create_client_table
 from models.company_model import create_company_table
+from models.estimate_model import create_estimate_tables
+from models.expense_model import create_expense_table
 from models.invoice_model import create_invoice_tables
 from models.product_model import create_product_table
 from models.recurring_model import create_recurring_table
@@ -28,6 +30,8 @@ from routes.company_routes import company_bp
 from routes.dashboard_routes import dashboard_bp
 from routes.docs_routes import docs_bp
 from routes.export_routes import export_bp
+from routes.estimate_routes import estimate_bp
+from routes.expense_routes import expense_bp
 from routes.gst_routes import gst_bp
 from routes.invoice_routes import invoice_bp
 from routes.job_routes import job_bp
@@ -47,6 +51,8 @@ def init_database() -> None:
     create_user_table()
     create_company_table()
     create_invoice_tables()
+    create_estimate_tables()
+    create_expense_table()
     create_client_table()
     create_product_table()
     create_audit_table()
@@ -73,6 +79,8 @@ def create_app() -> Flask:
         CORS(app, resources={r"/api/*": {"origins": CORS_ORIGINS}})
     app.register_blueprint(auth_bp)
     app.register_blueprint(invoice_bp)
+    app.register_blueprint(estimate_bp)
+    app.register_blueprint(expense_bp)
     app.register_blueprint(job_bp)
     app.register_blueprint(gst_bp)
     app.register_blueprint(company_bp)

@@ -160,7 +160,12 @@ export type DashboardAnalytics = {
   monthly: Array<{ month: string; revenue: number; gst: number }>;
   status: Array<{ status: string; count: number; amount: number }>;
   topClients: Array<{ clientName: string; amount: number; invoiceCount: number }>;
-  overdue: Array<{ invoice_number: string; client_name: string; due_date: string; balance_due: number }>;
+  overdue: Array<{
+    invoice_number: string;
+    client_name: string;
+    due_date: string;
+    balance_due: number;
+  }>;
 };
 
 export type AppUser = {
@@ -338,9 +343,12 @@ function normalizeCompany(company: any): Company {
     website: company.website ?? "",
     invoicePrefix: company.invoice_prefix ?? company.invoicePrefix ?? "INV",
     nextInvoiceNumber: Number(company.current_number ?? 0) + 1,
-    invoiceNumberPadding: Number(company.invoice_number_padding ?? company.invoiceNumberPadding ?? 4),
+    invoiceNumberPadding: Number(
+      company.invoice_number_padding ?? company.invoiceNumberPadding ?? 4,
+    ),
     currencySymbol: company.currency_symbol ?? company.currencySymbol ?? "Rs.",
-    defaultPaymentTerms: company.default_payment_terms ?? company.defaultPaymentTerms ?? "Due within 15 days",
+    defaultPaymentTerms:
+      company.default_payment_terms ?? company.defaultPaymentTerms ?? "Due within 15 days",
     logoPath: company.logo_path ?? company.logoPath ?? "",
     bankName: company.bank_name ?? company.bankName ?? "",
     bankAccountName: company.bank_account_name ?? company.bankAccountName ?? "",
@@ -348,7 +356,8 @@ function normalizeCompany(company: any): Company {
     bankIfsc: company.bank_ifsc ?? company.bankIfsc ?? "",
     upiId: company.upi_id ?? company.upiId ?? "",
     termsAndConditions: company.terms_and_conditions ?? company.termsAndConditions ?? "",
-    authorizedSignatoryName: company.authorized_signatory_name ?? company.authorizedSignatoryName ?? "",
+    authorizedSignatoryName:
+      company.authorized_signatory_name ?? company.authorizedSignatoryName ?? "",
     signaturePath: company.signature_path ?? company.signaturePath ?? "",
     pdfTemplate: company.pdf_template ?? company.pdfTemplate ?? "simple",
   };
@@ -546,13 +555,10 @@ async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
     : null;
 
   if (!res.ok || body?.success === false) {
-    throw new ApiError(
-      body?.message || `Request failed (${res.status})`,
-      body?.errors || {},
-    );
+    throw new ApiError(body?.message || `Request failed (${res.status})`, body?.errors || {});
   }
 
-  return (body ? body.data : (await res.text())) as T;
+  return (body ? body.data : await res.text()) as T;
 }
 
 async function downloadBlob(path: string, fileName: string) {
@@ -611,16 +617,19 @@ async function publicRequest<T>(path: string, opts: RequestInit = {}): Promise<T
   if (!res.ok || body?.success === false) {
     throw new ApiError(body?.message || `Request failed (${res.status})`, body?.errors || {});
   }
-  return (body ? body.data : (await res.text())) as T;
+  return (body ? body.data : await res.text()) as T;
 }
 
 export const api = {
   tokenKey: TOKEN_KEY,
   login: async (username: string, password: string) => {
-    const data = await request<{ token: string; user: { username: string }; expires_at: string }>("/auth/login", {
-      method: "POST",
-      body: JSON.stringify({ username, password }),
-    });
+    const data = await request<{ token: string; user: { username: string }; expires_at: string }>(
+      "/auth/login",
+      {
+        method: "POST",
+        body: JSON.stringify({ username, password }),
+      },
+    );
     localStorage.setItem(TOKEN_KEY, data.token);
     return data;
   },
@@ -630,10 +639,13 @@ export const api = {
       body: JSON.stringify({ username, email, password }),
     }),
   forgotPassword: (identifier: string) =>
-    request<{ sent: boolean; reset_token?: string; expires_at?: string; note?: string }>("/auth/forgot-password", {
-      method: "POST",
-      body: JSON.stringify({ email: identifier, username: identifier }),
-    }),
+    request<{ sent: boolean; reset_token?: string; expires_at?: string; note?: string }>(
+      "/auth/forgot-password",
+      {
+        method: "POST",
+        body: JSON.stringify({ email: identifier, username: identifier }),
+      },
+    ),
   resetPassword: (token: string, password: string) =>
     request<{ reset: boolean }>("/auth/reset-password", {
       method: "POST",
@@ -683,8 +695,7 @@ export const api = {
         body: JSON.stringify(invoicePayload(data)),
       }),
     ),
-  deleteInvoice: (id: string) =>
-    request<{ id: number }>(`/invoices/${id}`, { method: "DELETE" }),
+  deleteInvoice: (id: string) => request<{ id: number }>(`/invoices/${id}`, { method: "DELETE" }),
   voidInvoice: async (id: string, reason: string) =>
     normalizeInvoice(
       await request<any>(`/invoices/${id}/void`, {
@@ -730,9 +741,15 @@ export const api = {
   downloadInvoicePdf: (id: string, invoiceNumber = "invoice") =>
     downloadBlob(`/invoices/${id}/pdf`, `${invoiceNumber}.pdf`),
   downloadPaymentReceipt: (invoiceId: string, paymentId: string, invoiceNumber = "invoice") =>
-    downloadBlob(`/invoices/${invoiceId}/payments/${paymentId}/receipt`, `receipt_${invoiceNumber}_${paymentId}.pdf`),
+    downloadBlob(
+      `/invoices/${invoiceId}/payments/${paymentId}/receipt`,
+      `receipt_${invoiceNumber}_${paymentId}.pdf`,
+    ),
   gstReport: async (month: number, year: number): Promise<GstReport> => {
-    await downloadBlob(`/reports/gst?month=${month}&year=${year}`, `gst_report_${year}_${String(month).padStart(2, "0")}.xlsx`);
+    await downloadBlob(
+      `/reports/gst?month=${month}&year=${year}`,
+      `gst_report_${year}_${String(month).padStart(2, "0")}.xlsx`,
+    );
     return { rows: [], totalSales: 0, totalGst: 0 };
   },
   getCompany: async () => normalizeCompany(await request<any>("/company")),
@@ -786,7 +803,8 @@ export const api = {
       body,
     });
     const payload = (await res.json()) as ApiEnvelope<any>;
-    if (!res.ok || payload.success === false) throw new ApiError(payload.message || "Client import failed", payload.errors || {});
+    if (!res.ok || payload.success === false)
+      throw new ApiError(payload.message || "Client import failed", payload.errors || {});
     return payload.data;
   },
   listClients: async (search = "") => {
@@ -843,14 +861,21 @@ export const api = {
       body,
     });
     const payload = (await res.json()) as ApiEnvelope<any>;
-    if (!res.ok || payload.success === false) throw new ApiError(payload.message || "Product import failed", payload.errors || {});
+    if (!res.ok || payload.success === false)
+      throw new ApiError(payload.message || "Product import failed", payload.errors || {});
     return payload.data;
   },
   listRecurringInvoices: async () => {
     const rows = await request<any[]>("/recurring-invoices");
     return rows.map(normalizeRecurring);
   },
-  createRecurringInvoice: async (data: { name: string; frequency: string; nextRunDate: string; active?: boolean; invoice: Omit<Invoice, "id"> }) =>
+  createRecurringInvoice: async (data: {
+    name: string;
+    frequency: string;
+    nextRunDate: string;
+    active?: boolean;
+    invoice: Omit<Invoice, "id">;
+  }) =>
     normalizeRecurring(
       await request<any>("/recurring-invoices", {
         method: "POST",
@@ -863,12 +888,17 @@ export const api = {
         }),
       }),
     ),
-  runDueRecurringInvoices: () => request<{ generated_count: number }>("/recurring-invoices/run-due", { method: "POST" }),
+  runDueRecurringInvoices: () =>
+    request<{ generated_count: number }>("/recurring-invoices/run-due", { method: "POST" }),
   getPaymentReminders: (days = 7) => request<any>(`/reminders/payments?days=${days}`),
   sendPaymentReminders: (days = 7) =>
     request<any>("/reminders/payments/send", { method: "POST", body: JSON.stringify({ days }) }),
   getReminderSettings: () => request<any>("/reminders/settings"),
-  saveReminderSettings: (data: { autoEnabled: boolean; daysAhead: number; emailTemplate: string }) =>
+  saveReminderSettings: (data: {
+    autoEnabled: boolean;
+    daysAhead: number;
+    emailTemplate: string;
+  }) =>
     request<any>("/reminders/settings", {
       method: "PUT",
       body: JSON.stringify({
@@ -912,10 +942,12 @@ export const api = {
       body,
     });
     const payload = (await res.json()) as ApiEnvelope<any>;
-    if (!res.ok || payload.success === false) throw new ApiError(payload.message || "Attachment upload failed", payload.errors || {});
+    if (!res.ok || payload.success === false)
+      throw new ApiError(payload.message || "Attachment upload failed", payload.errors || {});
     return payload.data;
   },
-  getPublicInvoice: async (token: string) => normalizePublicInvoice(await publicRequest<any>(`/portal/${token}`)),
+  getPublicInvoice: async (token: string) =>
+    normalizePublicInvoice(await publicRequest<any>(`/portal/${token}`)),
   downloadPublicInvoicePdf: (token: string, invoiceNumber = "invoice") =>
     downloadBlob(`/portal/${token}/pdf`, `${invoiceNumber}.pdf`),
   uploadPaymentProof: async (token: string, file: File) => {
@@ -926,7 +958,8 @@ export const api = {
       body,
     });
     const payload = (await res.json()) as ApiEnvelope<any>;
-    if (!res.ok || payload.success === false) throw new ApiError(payload.message || "Payment proof upload failed", payload.errors || {});
+    if (!res.ok || payload.success === false)
+      throw new ApiError(payload.message || "Payment proof upload failed", payload.errors || {});
     return payload.data;
   },
   sendPortalMessage: (token: string, message: string) =>
@@ -954,7 +987,11 @@ export const api = {
       method: "PUT",
       body: JSON.stringify({ registration_enabled: data.registrationEnabled }),
     }),
-  downloadBackup: () => downloadBlob("/backups/export", `smart_invoice_backup_${new Date().toISOString().slice(0, 10)}.zip`),
+  downloadBackup: () =>
+    downloadBlob(
+      "/backups/export",
+      `smart_invoice_backup_${new Date().toISOString().slice(0, 10)}.zip`,
+    ),
   downloadDataExport: (format: "xlsx" | "json") =>
     downloadBlob(
       `/exports/data?format=${format}`,

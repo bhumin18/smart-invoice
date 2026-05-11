@@ -114,3 +114,45 @@ def send_password_reset_email(user: dict[str, Any], reset_link: str) -> dict[str
 
     logger.info("Sent password reset email to user id=%s", user.get("id"))
     return {"to_email": to_email}
+
+
+def send_email_verification_email(user: dict[str, Any], verification_link: str) -> dict[str, Any]:
+    """Email an account verification link to a user."""
+    config = _email_config()
+    if not bool(config.get("enabled")):
+        raise ValidationError({"email": "Email is disabled. Enable email.enabled in backend/config.yaml."})
+
+    to_email = str(user.get("email") or "").strip()
+    if not to_email or "@" not in to_email:
+        raise ValidationError({"email": "User does not have a valid email address"})
+
+    from_email = str(config.get("from_email") or config.get("username") or "").strip()
+    if not from_email:
+        raise ValidationError({"from_email": "SMTP from_email or username is not configured"})
+
+    email = EmailMessage()
+    email["Subject"] = "Verify your Smart Invoice account"
+    email["From"] = f"{config.get('from_name') or 'Smart Invoice'} <{from_email}>"
+    email["To"] = to_email
+    email.set_content(
+        "Welcome to Smart Invoice.\n\n"
+        f"Open this link to verify your email address:\n{verification_link}\n\n"
+        "If you did not create this account, you can ignore this email."
+    )
+
+    host = str(config.get("smtp_host") or "").strip()
+    port = int(config.get("smtp_port") or 587)
+    username = str(config.get("username") or "").strip()
+    password = str(config.get("password") or "")
+    if not host:
+        raise ValidationError({"smtp_host": "SMTP host is not configured"})
+
+    with smtplib.SMTP(host, port, timeout=30) as smtp:
+        if bool(config.get("use_tls", True)):
+            smtp.starttls()
+        if username:
+            smtp.login(username, password)
+        smtp.send_message(email)
+
+    logger.info("Sent verification email to user id=%s", user.get("id"))
+    return {"to_email": to_email}

@@ -73,7 +73,10 @@ test("invoice form can create a demo invoice", async ({ page }) => {
 test("invoice detail actions show PDF preview and client link", async ({ page }) => {
   const token = await loginApi();
   const invoice = await createInvoice(token);
-  await page.addInitScript((authToken) => localStorage.setItem("smart-invoice-auth-token", authToken), token);
+  await page.addInitScript(
+    (authToken) => localStorage.setItem("smart-invoice-auth-token", authToken),
+    token,
+  );
   await page.goto(`/invoices/${invoice.id}`);
   await expect(page.getByText(invoice.invoice_number)).toBeVisible();
   await page.getByRole("button", { name: "Client Link", exact: true }).click();

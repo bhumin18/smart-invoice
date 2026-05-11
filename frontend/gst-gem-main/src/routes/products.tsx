@@ -97,25 +97,51 @@ function ProductsPage() {
         <CardContent>
           <form onSubmit={submit} className="space-y-4">
             <Field label="Name *">
-              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+              <Input
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+              />
             </Field>
             <Field label="Description">
-              <Textarea rows={3} value={form.description || ""} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+              <Textarea
+                rows={3}
+                value={form.description || ""}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+              />
             </Field>
             <div className="grid grid-cols-2 gap-3">
               <Field label="HSN/SAC">
-                <Input value={form.hsnSac || ""} onChange={(e) => setForm({ ...form, hsnSac: e.target.value })} />
+                <Input
+                  value={form.hsnSac || ""}
+                  onChange={(e) => setForm({ ...form, hsnSac: e.target.value })}
+                />
               </Field>
               <Field label="Unit">
-                <Input value={form.unit || ""} onChange={(e) => setForm({ ...form, unit: e.target.value })} />
+                <Input
+                  value={form.unit || ""}
+                  onChange={(e) => setForm({ ...form, unit: e.target.value })}
+                />
               </Field>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <Field label="Price">
-                <Input type="number" min={0} step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: Number(e.target.value) })} />
+                <Input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={form.price}
+                  onChange={(e) => setForm({ ...form, price: Number(e.target.value) })}
+                />
               </Field>
               <Field label="GST %">
-                <Input type="number" min={0} max={28} step="0.01" value={form.gstRate} onChange={(e) => setForm({ ...form, gstRate: Number(e.target.value) })} />
+                <Input
+                  type="number"
+                  min={0}
+                  max={28}
+                  step="0.01"
+                  value={form.gstRate}
+                  onChange={(e) => setForm({ ...form, gstRate: Number(e.target.value) })}
+                />
               </Field>
             </div>
             <div className="flex gap-2">
@@ -124,7 +150,14 @@ function ProductsPage() {
                 {editingId ? "Save Product" : "Add Product"}
               </Button>
               {editingId && (
-                <Button type="button" variant="outline" onClick={() => { setEditingId(""); setForm(emptyProduct); }}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setEditingId("");
+                    setForm(emptyProduct);
+                  }}
+                >
                   Cancel
                 </Button>
               )}
@@ -136,7 +169,9 @@ function ProductsPage() {
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Products & Services</h1>
-          <p className="mt-1 text-muted-foreground">Create reusable invoice items with HSN/SAC, price, and GST rate.</p>
+          <p className="mt-1 text-muted-foreground">
+            Create reusable invoice items with HSN/SAC, price, and GST rate.
+          </p>
         </div>
         <Card>
           <CardHeader className="gap-4 md:flex-row md:items-center md:justify-between">
@@ -145,7 +180,12 @@ function ProductsPage() {
             </CardTitle>
             <div className="relative w-full md:w-80">
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products..." />
+              <Input
+                className="pl-9"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search products..."
+              />
             </div>
             <div>
               <Input
@@ -158,7 +198,11 @@ function ProductsPage() {
                   if (file) importData.mutate(file);
                 }}
               />
-              <Button type="button" variant="outline" onClick={() => document.getElementById("product-import")?.click()}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => document.getElementById("product-import")?.click()}
+              >
                 <Upload className="h-4 w-4" /> Import
               </Button>
             </div>
@@ -166,9 +210,15 @@ function ProductsPage() {
           <CardContent>
             {error && <p className="text-sm text-destructive">{(error as Error).message}</p>}
             {isLoading ? (
-              <div className="space-y-2">{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
+              <div className="space-y-2">
+                {[...Array(4)].map((_, i) => (
+                  <Skeleton key={i} className="h-12 w-full" />
+                ))}
+              </div>
             ) : products.length === 0 ? (
-              <div className="py-12 text-center text-muted-foreground">No products or services found.</div>
+              <div className="py-12 text-center text-muted-foreground">
+                No products or services found.
+              </div>
             ) : (
               <Table>
                 <TableHeader>
@@ -196,7 +246,12 @@ function ProductsPage() {
                           <Button size="icon" variant="ghost" onClick={() => edit(product)}>
                             <Pencil className="h-4 w-4" />
                           </Button>
-                          <Button size="icon" variant="ghost" className="text-destructive" onClick={() => remove.mutate(id)}>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="text-destructive"
+                            onClick={() => remove.mutate(id)}
+                          >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </TableCell>

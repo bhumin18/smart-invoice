@@ -325,3 +325,46 @@ def test_security_scheduler_and_portal_review(client):
     overview = client.get("/api/users/admin/overview", headers=headers)
     assert overview.status_code == 200
     assert isinstance(overview.get_json()["data"]["login_activity"], list)
+
+
+def test_estimates_and_expenses(client):
+    """Cover estimate conversion and expense GST input tracking."""
+    headers = _login(client)
+    estimate_payload = {
+        "client_name": "Quote Client",
+        "client_gstin": "27ABCDE1234F1Z8",
+        "client_address": "Mumbai, Maharashtra",
+        "date": "2026-05-11",
+        "valid_until": "2026-06-10",
+        "supply_type": "interstate",
+        "items": [{"item_name": "Design Retainer", "quantity": 1, "price": 10000, "gst_rate": 18}],
+    }
+    created = client.post("/api/estimates", json=estimate_payload, headers=headers)
+    assert created.status_code == 201
+    estimate = created.get_json()["data"]
+    assert estimate["estimate_number"] == "QT-0001"
+    assert estimate["total"] == 11800.0
+
+    converted = client.post(f"/api/estimates/{estimate['id']}/convert", headers=headers)
+    assert converted.status_code == 200
+    assert converted.get_json()["data"]["client_name"] == "Quote Client"
+
+    expense = client.post(
+        "/api/expenses",
+        json={
+            "vendor_name": "Cloud Vendor",
+            "gstin": "29ABCDE1234F1Z8",
+            "category": "Software",
+            "expense_date": "2026-05-11",
+            "taxable_amount": 2500,
+            "gst_rate": 18,
+            "payment_mode": "Card",
+        },
+        headers=headers,
+    )
+    assert expense.status_code == 201
+    assert expense.get_json()["data"]["gst_amount"] == 450.0
+
+    listed = client.get("/api/expenses", headers=headers)
+    assert listed.status_code == 200
+    assert len(listed.get_json()["data"]) == 1

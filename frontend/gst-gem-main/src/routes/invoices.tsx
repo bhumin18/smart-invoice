@@ -114,7 +114,9 @@ function InvoicesList() {
           {error && <p className="text-sm text-destructive">{(error as Error).message}</p>}
           {isLoading ? (
             <div className="space-y-2">
-              {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
+              {[...Array(5)].map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
             </div>
           ) : invoices.length === 0 ? (
             <div className="py-12 text-center text-muted-foreground">No invoices yet.</div>
@@ -173,7 +175,11 @@ function InvoicesList() {
                           </Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button size="icon" variant="ghost" className="text-destructive hover:text-destructive">
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="text-destructive hover:text-destructive"
+                              >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </AlertDialogTrigger>
