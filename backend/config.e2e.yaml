@@ -1,0 +1,40 @@
+app:
+  name: Smart Invoice + GST Tool E2E
+  environment: testing
+  debug: false
+  secret_key: e2e-secret-key
+
+server:
+  host: 127.0.0.1
+  port: 5011
+
+cors:
+  allow_all: true
+
+database:
+  engine: sqlite
+  sqlite:
+    path: database/e2e.sqlite3
+
+outputs:
+  base_dir: outputs/e2e
+  invoices_dir: outputs/e2e/invoices
+  reports_dir: outputs/e2e/reports
+  assets_dir: outputs/e2e/assets
+  backups_dir: outputs/e2e/backups
+
+email:
+  enabled: false
+
+auth:
+  enabled: true
+  allow_registration: true
+  token_expiry_hours: 24
+  password_reset_token_minutes: 30
+  password_reset_url: http://127.0.0.1:4174
+  admin_username: admin
+  admin_password: admin123
+  admin_email: admin@example.com
+
+scheduler:
+  enabled: false

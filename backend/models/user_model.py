@@ -38,6 +38,9 @@ def create_user_table() -> None:
             "can_export_data": "INTEGER NOT NULL DEFAULT 1",
             "email_verified": "INTEGER NOT NULL DEFAULT 0",
             "verification_token": "TEXT",
+            "failed_login_count": "INTEGER NOT NULL DEFAULT 0",
+            "locked_until": "TEXT",
+            "last_login_at": "TEXT",
         }
         for column, definition in extra_columns.items():
             if column not in existing:
@@ -215,3 +218,33 @@ def verify_email_token(token: str) -> dict[str, Any] | None:
         )
         connection.commit()
     return get_user_by_id(int(user_id))
+
+
+def record_failed_login(user_id: int, locked_until: str | None = None) -> None:
+    """Increment failed login attempts and optionally lock the account."""
+    with get_db_connection() as connection:
+        connection.execute(
+            """
+            UPDATE users
+            SET failed_login_count = COALESCE(failed_login_count, 0) + 1,
+                locked_until = COALESCE(?, locked_until),
+                updated_at = ?
+            WHERE id = ?
+            """,
+            (locked_until, now_iso(), user_id),
+        )
+        connection.commit()
+
+
+def reset_login_security(user_id: int) -> None:
+    """Clear login lock state after a successful login."""
+    with get_db_connection() as connection:
+        connection.execute(
+            """
+            UPDATE users
+            SET failed_login_count = 0, locked_until = NULL, last_login_at = ?, updated_at = ?
+            WHERE id = ?
+            """,
+            (now_iso(), now_iso(), user_id),
+        )
+        connection.commit()

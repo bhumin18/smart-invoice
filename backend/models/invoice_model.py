@@ -16,7 +16,11 @@ INVOICE_COLUMNS = {
     "void_reason": "TEXT",
     "voided_at": "TEXT",
     "public_token": "TEXT",
+    "public_token_expires_at": "TEXT",
+    "public_token_revoked_at": "TEXT",
     "payment_proof_path": "TEXT",
+    "payment_proof_status": "TEXT NOT NULL DEFAULT 'not_uploaded'",
+    "client_portal_message": "TEXT",
 }
 
 
@@ -547,15 +551,102 @@ def set_invoice_public_token(invoice_id: int, token: str) -> dict[str, Any] | No
     return get_invoice_by_id(invoice_id)
 
 
+def update_invoice_public_link(
+    invoice_id: int,
+    token: str,
+    expires_at: str,
+    revoked_at: str = "",
+) -> dict[str, Any] | None:
+    """Persist public portal link metadata."""
+    with get_db_connection() as connection:
+        connection.execute(
+            """
+            UPDATE invoices
+            SET public_token = ?, public_token_expires_at = ?, public_token_revoked_at = ?, updated_at = ?
+            WHERE id = ?
+            """,
+            (token, expires_at, revoked_at, now_iso(), invoice_id),
+        )
+        connection.commit()
+    return get_invoice_by_id(invoice_id)
+
+
+def revoke_invoice_public_link(invoice_id: int) -> dict[str, Any] | None:
+    """Revoke a public portal link."""
+    with get_db_connection() as connection:
+        connection.execute(
+            "UPDATE invoices SET public_token_revoked_at = ?, updated_at = ? WHERE id = ?",
+            (now_iso(), now_iso(), invoice_id),
+        )
+        connection.commit()
+    return get_invoice_by_id(invoice_id)
+
+
 def set_invoice_payment_proof(invoice_id: int, proof_path: str) -> dict[str, Any] | None:
     """Persist client uploaded payment proof path."""
     with get_db_connection() as connection:
         connection.execute(
-            "UPDATE invoices SET payment_proof_path = ?, updated_at = ? WHERE id = ?",
+            "UPDATE invoices SET payment_proof_path = ?, payment_proof_status = 'pending_review', updated_at = ? WHERE id = ?",
             (proof_path, now_iso(), invoice_id),
         )
         connection.commit()
     return get_invoice_by_id(invoice_id)
+
+
+def update_payment_proof_status(invoice_id: int, status: str) -> dict[str, Any] | None:
+    """Update payment proof review status."""
+    with get_db_connection() as connection:
+        connection.execute(
+            "UPDATE invoices SET payment_proof_status = ?, updated_at = ? WHERE id = ?",
+            (status, now_iso(), invoice_id),
+        )
+        connection.commit()
+    return get_invoice_by_id(invoice_id)
+
+
+def update_client_portal_message(invoice_id: int, message: str) -> dict[str, Any] | None:
+    """Persist a message from the client portal."""
+    with get_db_connection() as connection:
+        connection.execute(
+            "UPDATE invoices SET client_portal_message = ?, updated_at = ? WHERE id = ?",
+            (message, now_iso(), invoice_id),
+        )
+        connection.commit()
+    return get_invoice_by_id(invoice_id)
+
+
+def get_public_link_invoices(limit: int = 100) -> list[dict[str, Any]]:
+    """Return invoices that have public portal links."""
+    with get_db_connection() as connection:
+        rows = connection.execute(
+            """
+            SELECT id, owner_user_id, invoice_number, client_name, public_token,
+                   public_token_expires_at, public_token_revoked_at,
+                   payment_proof_status, payment_proof_path, client_portal_message
+            FROM invoices
+            WHERE public_token IS NOT NULL AND public_token != ''
+            ORDER BY id DESC
+            LIMIT ?
+            """,
+            (int(limit),),
+        ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def get_all_invoice_attachments(limit: int = 100) -> list[dict[str, Any]]:
+    """Return recent invoice attachments for admin visibility."""
+    with get_db_connection() as connection:
+        rows = connection.execute(
+            """
+            SELECT a.*, i.invoice_number, i.client_name
+            FROM invoice_attachments a
+            JOIN invoices i ON i.id = a.invoice_id
+            ORDER BY a.id DESC
+            LIMIT ?
+            """,
+            (int(limit),),
+        ).fetchall()
+    return [dict(row) for row in rows]
 
 
 def update_invoice_pdf_path(invoice_id: int, pdf_path: str) -> dict[str, Any] | None:

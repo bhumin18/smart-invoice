@@ -15,12 +15,15 @@ from models.user_model import (
     get_user_by_reset_token,
     get_user_by_username,
     insert_user,
+    record_failed_login,
+    reset_login_security,
     set_reset_token,
     set_verification_token,
     update_password,
     user_count,
     verify_email_token,
 )
+from models.security_model import insert_auth_event
 from models.settings_model import registration_enabled
 from utils.helpers import ValidationError
 
@@ -42,10 +45,76 @@ def login(payload: dict[str, Any]) -> dict[str, Any]:
     """Validate admin credentials and return an access token."""
     username = str(payload.get("username", "")).strip()
     password = str(payload.get("password", ""))
+    ip_address = str(payload.get("_ip_address", ""))
+    user_agent = str(payload.get("_user_agent", ""))
     user = get_user_by_username(username)
-    if user is None or not int(user.get("active", 0)) or not check_password_hash(str(user.get("password_hash")), password):
+    if user is None:
+        insert_auth_event(
+            {
+                "username": username,
+                "event_type": "login_failed",
+                "ip_address": ip_address,
+                "user_agent": user_agent,
+                "success": False,
+                "message": "Unknown username",
+            }
+        )
         raise ValidationError({"credentials": "Invalid username or password"})
 
+    locked_until = str(user.get("locked_until") or "")
+    if locked_until:
+        try:
+            locked_until_dt = datetime.fromisoformat(locked_until)
+            if locked_until_dt > datetime.now():
+                insert_auth_event(
+                    {
+                        "user_id": user.get("id"),
+                        "username": username,
+                        "event_type": "login_blocked",
+                        "ip_address": ip_address,
+                        "user_agent": user_agent,
+                        "success": False,
+                        "message": "Account is temporarily locked",
+                    }
+                )
+                raise ValidationError({"credentials": f"Account locked until {locked_until}"})
+        except ValueError:
+            pass
+
+    if not int(user.get("active", 0)) or not check_password_hash(str(user.get("password_hash")), password):
+        failed_count = int(user.get("failed_login_count") or 0) + 1
+        max_attempts = int(get_config("security.login_max_attempts", 5))
+        lock_until = None
+        message = "Invalid username or password"
+        if failed_count >= max_attempts:
+            lock_until = (datetime.now() + timedelta(minutes=int(get_config("security.login_lock_minutes", 15)))).isoformat(timespec="seconds")
+            message = f"Too many failed attempts. Account locked until {lock_until}"
+        record_failed_login(int(user["id"]), lock_until)
+        insert_auth_event(
+            {
+                "user_id": user.get("id"),
+                "username": username,
+                "event_type": "login_failed",
+                "ip_address": ip_address,
+                "user_agent": user_agent,
+                "success": False,
+                "message": message,
+            }
+        )
+        raise ValidationError({"credentials": "Invalid username or password"})
+
+    reset_login_security(int(user["id"]))
+    insert_auth_event(
+        {
+            "user_id": user.get("id"),
+            "username": username,
+            "event_type": "login_success",
+            "ip_address": ip_address,
+            "user_agent": user_agent,
+            "success": True,
+            "message": "Login successful",
+        }
+    )
     expiry_hours = int(get_config("auth.token_expiry_hours", 24))
     expires_at = datetime.now(timezone.utc) + timedelta(hours=expiry_hours)
     token = _serializer().dumps({"id": user.get("id"), "username": user.get("username"), "role": user.get("role")})

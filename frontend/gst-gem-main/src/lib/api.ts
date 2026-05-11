@@ -51,6 +51,11 @@ export type Invoice = {
   voidedAt?: string;
   payments?: InvoicePayment[];
   attachments?: InvoiceAttachment[];
+  publicTokenExpiresAt?: string;
+  publicTokenRevokedAt?: string;
+  paymentProofPath?: string;
+  paymentProofStatus?: string;
+  clientPortalMessage?: string;
   createdAt?: string;
 };
 
@@ -193,6 +198,8 @@ export type PublicLink = {
   token: string;
   publicPath: string;
   invoiceId: number;
+  expiresAt?: string;
+  revokedAt?: string;
 };
 
 export type PublicInvoice = {
@@ -206,6 +213,9 @@ export type PublicInvoice = {
   amountPaid: number;
   balanceDue: number;
   status?: string;
+  paymentProofStatus?: string;
+  clientPortalMessage?: string;
+  timeline?: Array<{ label: string; date?: string }>;
   items: InvoiceItem[];
 };
 
@@ -263,6 +273,11 @@ function normalizeInvoice(invoice: any): Invoice {
           createdAt: attachment.created_at ?? attachment.createdAt ?? "",
         }))
       : [],
+    publicTokenExpiresAt: invoice.public_token_expires_at ?? invoice.publicTokenExpiresAt ?? "",
+    publicTokenRevokedAt: invoice.public_token_revoked_at ?? invoice.publicTokenRevokedAt ?? "",
+    paymentProofPath: invoice.payment_proof_path ?? invoice.paymentProofPath ?? "",
+    paymentProofStatus: invoice.payment_proof_status ?? invoice.paymentProofStatus ?? "",
+    clientPortalMessage: invoice.client_portal_message ?? invoice.clientPortalMessage ?? "",
     createdAt: invoice.created_at ?? invoice.createdAt,
   };
 }
@@ -279,6 +294,9 @@ function normalizePublicInvoice(invoice: any): PublicInvoice {
     amountPaid: Number(invoice.amount_paid ?? invoice.amountPaid ?? 0),
     balanceDue: Number(invoice.balance_due ?? invoice.balanceDue ?? 0),
     status: invoice.status ?? "",
+    paymentProofStatus: invoice.payment_proof_status ?? invoice.paymentProofStatus ?? "",
+    clientPortalMessage: invoice.client_portal_message ?? invoice.clientPortalMessage ?? "",
+    timeline: Array.isArray(invoice.timeline) ? invoice.timeline : [],
     items: Array.isArray(invoice.items) ? invoice.items.map(normalizeItem) : [],
   };
 }
@@ -860,14 +878,28 @@ export const api = {
       }),
     }),
   runAutoReminders: () => request<any>("/reminders/run-auto", { method: "POST" }),
-  createPublicInvoiceLink: async (id: string): Promise<PublicLink> => {
-    const value = await request<any>(`/invoices/${id}/public-link`, { method: "POST" });
+  createPublicInvoiceLink: async (id: string, expiryDays = 30): Promise<PublicLink> => {
+    const value = await request<any>(`/invoices/${id}/public-link`, {
+      method: "POST",
+      body: JSON.stringify({ expiry_days: expiryDays }),
+    });
     return {
       token: value.token,
       publicPath: value.public_path,
       invoiceId: Number(value.invoice_id),
+      expiresAt: value.expires_at ?? "",
+      revokedAt: value.revoked_at ?? "",
     };
   },
+  revokePublicInvoiceLink: async (id: string) =>
+    normalizeInvoice(await request<any>(`/invoices/${id}/public-link`, { method: "DELETE" })),
+  reviewPaymentProof: async (id: string, status: "approved" | "rejected" | "pending_review") =>
+    normalizeInvoice(
+      await request<any>(`/invoices/${id}/payment-proof/review`, {
+        method: "POST",
+        body: JSON.stringify({ status }),
+      }),
+    ),
   uploadInvoiceAttachment: async (id: string, file: File, type = "supporting") => {
     const body = new FormData();
     body.append("file", file);
@@ -897,6 +929,14 @@ export const api = {
     if (!res.ok || payload.success === false) throw new ApiError(payload.message || "Payment proof upload failed", payload.errors || {});
     return payload.data;
   },
+  sendPortalMessage: (token: string, message: string) =>
+    publicRequest<any>(`/portal/${token}/message`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message }),
+    }),
+  getSchedulerStatus: () => request<any>("/jobs"),
+  runScheduledJobs: () => request<any>("/jobs/run", { method: "POST" }),
   listUsers: async () => {
     const users = await request<any[]>("/users");
     return users.map(normalizeUser);

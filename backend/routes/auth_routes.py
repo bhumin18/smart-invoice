@@ -18,7 +18,10 @@ logger = logging.getLogger(__name__)
 def login_route():
     """Authenticate admin user and return a bearer token."""
     try:
-        result = login(request.get_json(silent=True) or {})
+        payload = request.get_json(silent=True) or {}
+        payload["_ip_address"] = request.headers.get("X-Forwarded-For", request.remote_addr or "").split(",")[0].strip()
+        payload["_user_agent"] = request.headers.get("User-Agent", "")
+        result = login(payload)
         return api_response(True, result, "Logged in successfully")
     except ValidationError as exc:
         return api_response(False, {}, exc.message, 401, exc.errors)

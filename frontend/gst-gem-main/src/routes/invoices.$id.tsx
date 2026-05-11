@@ -58,6 +58,7 @@ function InvoiceDetail() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewUrl, setPreviewUrl] = useState("");
   const [publicUrl, setPublicUrl] = useState("");
+  const [publicExpiryDays, setPublicExpiryDays] = useState(30);
   const [form, setForm] = useState<Invoice>({
     clientName: "",
     items: [emptyRow()],
@@ -158,12 +159,31 @@ function InvoiceDetail() {
   });
 
   const publicLink = useMutation({
-    mutationFn: () => api.createPublicInvoiceLink(id),
+    mutationFn: () => api.createPublicInvoiceLink(id, publicExpiryDays),
     onSuccess: async (link) => {
       const url = `${window.location.origin}${link.publicPath}`;
       setPublicUrl(url);
       await navigator.clipboard?.writeText(url);
-      toast.success("Client portal link copied");
+      toast.success(`Client portal link copied${link.expiresAt ? `, expires ${link.expiresAt}` : ""}`);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const revokePublicLink = useMutation({
+    mutationFn: () => api.revokePublicInvoiceLink(id),
+    onSuccess: (updated) => {
+      qc.setQueryData(["invoice", id], updated);
+      setPublicUrl("");
+      toast.success("Client portal link revoked");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const reviewProof = useMutation({
+    mutationFn: (status: "approved" | "rejected" | "pending_review") => api.reviewPaymentProof(id, status),
+    onSuccess: (updated) => {
+      qc.setQueryData(["invoice", id], updated);
+      toast.success("Payment proof review updated");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -533,12 +553,43 @@ function InvoiceDetail() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="public-expiry" className="text-xs">Expiry days</Label>
+                      <Input
+                        id="public-expiry"
+                        type="number"
+                        min={1}
+                        className="h-9 w-24"
+                        value={publicExpiryDays}
+                        onChange={(e) => setPublicExpiryDays(Number(e.target.value))}
+                      />
+                    </div>
                     <Button type="button" variant="outline" onClick={() => publicLink.mutate()} disabled={publicLink.isPending}>
                       <Link2 className="h-4 w-4" />
                       {publicLink.isPending ? "Creating..." : "Copy Secure Client Link"}
                     </Button>
+                    <Button type="button" variant="outline" onClick={() => revokePublicLink.mutate()} disabled={revokePublicLink.isPending || !inv.publicTokenExpiresAt}>
+                      Revoke Link
+                    </Button>
                     {publicUrl && <span className="text-xs text-muted-foreground break-all">{publicUrl}</span>}
                   </div>
+                  <div className="grid gap-2 text-xs text-muted-foreground md:grid-cols-3">
+                    <span>Expires: {inv.publicTokenExpiresAt || "-"}</span>
+                    <span>Revoked: {inv.publicTokenRevokedAt || "-"}</span>
+                    <span>Payment proof: {inv.paymentProofStatus || "not_uploaded"}</span>
+                  </div>
+                  {inv.clientPortalMessage && (
+                    <div className="rounded-md border bg-muted/30 p-3 text-sm">
+                      <div className="mb-1 text-xs font-medium uppercase text-muted-foreground">Client Message</div>
+                      <div className="whitespace-pre-line">{inv.clientPortalMessage}</div>
+                    </div>
+                  )}
+                  {inv.paymentProofStatus && inv.paymentProofStatus !== "not_uploaded" && (
+                    <div className="flex flex-wrap gap-2">
+                      <Button type="button" variant="outline" size="sm" onClick={() => reviewProof.mutate("approved")}>Approve Proof</Button>
+                      <Button type="button" variant="outline" size="sm" onClick={() => reviewProof.mutate("rejected")}>Reject Proof</Button>
+                    </div>
+                  )}
                   {(inv.attachments || []).length === 0 ? (
                     <p className="text-sm text-muted-foreground">No supporting documents uploaded yet.</p>
                   ) : (

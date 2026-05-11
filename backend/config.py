@@ -57,6 +57,30 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "admin_email": "admin@example.com",
     },
     "logging": {"level": "INFO"},
+    "security": {
+        "max_upload_mb": 10,
+        "login_max_attempts": 5,
+        "login_lock_minutes": 15,
+        "rate_limit_window_seconds": 60,
+        "rate_limit_max_requests": 30,
+    },
+    "scheduler": {
+        "enabled": False,
+        "timezone": "Asia/Kolkata",
+        "daily_hour": 9,
+        "daily_minute": 0,
+    },
+    "portal": {
+        "default_link_expiry_days": 30,
+    },
+    "storage": {
+        "provider": "local",
+        "s3_endpoint_url": "",
+        "s3_bucket": "",
+        "s3_access_key_id": "",
+        "s3_secret_access_key": "",
+        "signed_url_expiry_seconds": 900,
+    },
     "tax": {"max_gst_rate": 28, "default_supply_type": "intrastate"},
     "features": {
         "auth_enabled": False,
@@ -145,6 +169,24 @@ APP_CONFIG["email"]["username"] = os.getenv("SMTP_USERNAME", str(APP_CONFIG["ema
 APP_CONFIG["email"]["password"] = os.getenv("SMTP_PASSWORD", str(APP_CONFIG["email"]["password"]))
 APP_CONFIG["email"]["from_email"] = os.getenv("SMTP_FROM_EMAIL", str(APP_CONFIG["email"]["from_email"]))
 APP_CONFIG["email"]["from_name"] = os.getenv("SMTP_FROM_NAME", str(APP_CONFIG["email"]["from_name"]))
+APP_CONFIG["security"]["max_upload_mb"] = _env_int("MAX_UPLOAD_MB", int(APP_CONFIG["security"]["max_upload_mb"]))
+APP_CONFIG["security"]["login_max_attempts"] = _env_int(
+    "LOGIN_MAX_ATTEMPTS", int(APP_CONFIG["security"]["login_max_attempts"])
+)
+APP_CONFIG["security"]["login_lock_minutes"] = _env_int(
+    "LOGIN_LOCK_MINUTES", int(APP_CONFIG["security"]["login_lock_minutes"])
+)
+APP_CONFIG["security"]["rate_limit_window_seconds"] = _env_int(
+    "RATE_LIMIT_WINDOW_SECONDS", int(APP_CONFIG["security"]["rate_limit_window_seconds"])
+)
+APP_CONFIG["security"]["rate_limit_max_requests"] = _env_int(
+    "RATE_LIMIT_MAX_REQUESTS", int(APP_CONFIG["security"]["rate_limit_max_requests"])
+)
+APP_CONFIG["scheduler"]["enabled"] = _env_bool("SCHEDULER_ENABLED", bool(APP_CONFIG["scheduler"]["enabled"]))
+APP_CONFIG["scheduler"]["daily_hour"] = _env_int("SCHEDULER_DAILY_HOUR", int(APP_CONFIG["scheduler"]["daily_hour"]))
+APP_CONFIG["scheduler"]["daily_minute"] = _env_int(
+    "SCHEDULER_DAILY_MINUTE", int(APP_CONFIG["scheduler"]["daily_minute"])
+)
 APP_CONFIG["auth"]["enabled"] = _env_bool("AUTH_ENABLED", bool(APP_CONFIG["auth"]["enabled"]))
 APP_CONFIG["auth"]["allow_registration"] = _env_bool(
     "AUTH_ALLOW_REGISTRATION", bool(APP_CONFIG["auth"]["allow_registration"])
@@ -232,6 +274,7 @@ INVOICE_OUTPUT_PATH = _resolve_backend_path(get_config("outputs.invoices_dir", "
 REPORT_OUTPUT_PATH = _resolve_backend_path(get_config("outputs.reports_dir", "outputs/reports"))
 ASSETS_OUTPUT_PATH = _resolve_backend_path(get_config("outputs.assets_dir", "outputs/assets"))
 BACKUPS_OUTPUT_PATH = _resolve_backend_path(get_config("outputs.backups_dir", "outputs/backups"))
+MAX_CONTENT_LENGTH = int(get_config("security.max_upload_mb", 10)) * 1024 * 1024
 
 
 def validate_database_config() -> None:

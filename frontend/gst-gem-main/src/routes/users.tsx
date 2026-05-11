@@ -31,6 +31,11 @@ function UsersPage() {
     queryFn: api.getAdminOverview,
     retry: false,
   });
+  const { data: schedulerStatus } = useQuery({
+    queryKey: ["scheduler-status"],
+    queryFn: api.getSchedulerStatus,
+    retry: false,
+  });
   const save = useMutation({
     mutationFn: (user: AppUser) => api.updateUser(String(user.id ?? ""), user),
     onSuccess: () => {
@@ -43,6 +48,15 @@ function UsersPage() {
     mutationFn: api.updateAdminSettings,
     onSuccess: () => {
       toast.success("Admin settings updated");
+      qc.invalidateQueries({ queryKey: ["admin-overview"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const runJobs = useMutation({
+    mutationFn: api.runScheduledJobs,
+    onSuccess: () => {
+      toast.success("Scheduled jobs processed");
+      qc.invalidateQueries({ queryKey: ["scheduler-status"] });
       qc.invalidateQueries({ queryKey: ["admin-overview"] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -172,6 +186,79 @@ function UsersPage() {
           </CardContent>
         </Card>
       ) : null}
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Scheduler & Job Logs</CardTitle>
+            <Button type="button" variant="outline" onClick={() => runJobs.mutate()} disabled={runJobs.isPending}>
+              {runJobs.isPending ? "Running..." : "Run Now"}
+            </Button>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="text-sm text-muted-foreground">
+              Auto scheduler: {schedulerStatus?.enabled ? "Enabled" : "Disabled"} at {schedulerStatus?.daily_hour ?? 9}:{String(schedulerStatus?.daily_minute ?? 0).padStart(2, "0")}
+            </div>
+            {(schedulerStatus?.logs || adminOverview?.job_logs || []).slice(0, 8).map((job: any) => (
+              <div key={job.id} className="rounded-md border p-3 text-sm">
+                <div className="flex justify-between gap-3">
+                  <span className="font-medium">{String(job.job_name || "").replace(/_/g, " ")}</span>
+                  <Badge variant={job.status === "success" ? "default" : "secondary"}>{job.status}</Badge>
+                </div>
+                <div className="mt-1 text-xs text-muted-foreground">{job.finished_at || job.created_at}</div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Login Activity</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {(adminOverview?.login_activity || []).slice(0, 8).map((event: any) => (
+              <div key={event.id} className="flex justify-between rounded-md border p-3 text-sm">
+                <span>{event.username || "unknown"} - {String(event.event_type || "").replace(/_/g, " ")}</span>
+                <span className="text-muted-foreground">{event.created_at ? new Date(event.created_at).toLocaleString("en-IN") : ""}</span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Public Portal Links</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {(adminOverview?.public_links || []).slice(0, 8).map((link: any) => (
+              <div key={link.id} className="rounded-md border p-3 text-sm">
+                <div className="font-medium">{link.invoice_number} - {link.client_name}</div>
+                <div className="text-xs text-muted-foreground">
+                  Expires {link.public_token_expires_at || "-"} - Proof {link.payment_proof_status || "not_uploaded"}
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Uploaded Files</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {(adminOverview?.uploads || []).slice(0, 8).map((upload: any) => (
+              <div key={upload.id} className="rounded-md border p-3 text-sm">
+                <div className="font-medium">{upload.file_name}</div>
+                <div className="text-xs text-muted-foreground">
+                  {upload.invoice_number} - {upload.attachment_type} - {upload.created_at}
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

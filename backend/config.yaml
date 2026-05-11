@@ -82,6 +82,30 @@ tax:
   max_gst_rate: 28
   default_supply_type: intrastate
 
+security:
+  max_upload_mb: 10
+  login_max_attempts: 5
+  login_lock_minutes: 15
+  rate_limit_window_seconds: 60
+  rate_limit_max_requests: 30
+
+scheduler:
+  enabled: false
+  timezone: Asia/Kolkata
+  daily_hour: 9
+  daily_minute: 0
+
+portal:
+  default_link_expiry_days: 30
+
+storage:
+  provider: local
+  s3_endpoint_url: ""
+  s3_bucket: ""
+  s3_access_key_id: ""
+  s3_secret_access_key: ""
+  signed_url_expiry_seconds: 900
+
 features:
   auth_enabled: true
   client_master_enabled: true

@@ -24,10 +24,12 @@ Production-ready full-stack invoicing and GST management app for Indian freelanc
 - Recurring invoice UI with client/product selection and due-run generation
 - Payment reminder settings, custom reminder templates, scheduler hook, and reminder history
 - Secure public client portal links for invoice view/download and payment-proof upload
+- Client portal link expiry/revoke, client messages, payment timeline, and proof review
 - Invoice attachments for work proof, PO documents, payment receipts, and supporting files
-- Admin overview with registration toggle, activity, user totals, and storage usage
+- Admin overview with registration toggle, activity, login security events, job logs, portal links, uploads, user totals, and storage usage
 - OpenAPI JSON and API docs at `/api/docs`
 - Automated backend regression tests with pytest
+- Playwright frontend E2E tests for login/register, invoice creation, invoice detail actions, and client portal
 - YAML-based configuration
 - Docker setup for local deployment
 - SQLite today, with SQLAlchemy migration scaffold for PostgreSQL/MySQL
@@ -282,12 +284,17 @@ GET             /api/reminders/payments
 POST            /api/reminders/payments/send
 GET/PUT         /api/reminders/settings
 POST            /api/reminders/run-auto
+GET             /api/jobs
+POST            /api/jobs/run
 
 POST            /api/invoices/<id>/public-link
+DELETE          /api/invoices/<id>/public-link
 POST            /api/invoices/<id>/attachments
+POST            /api/invoices/<id>/payment-proof/review
 GET             /api/portal/<token>
 GET             /api/portal/<token>/pdf
 POST            /api/portal/<token>/payment-proof
+POST            /api/portal/<token>/message
 
 GET/POST        /api/company
 POST            /api/company/logo
@@ -360,6 +367,14 @@ cd frontend/gst-gem-main
 npm run build
 ```
 
+Frontend E2E tests:
+
+```powershell
+cd frontend/gst-gem-main
+npx playwright install chromium
+npm run test:e2e
+```
+
 - Login as admin
 - Create a new user
 - Confirm admin can change permissions
@@ -381,6 +396,8 @@ npm run build
 - Disable open registration if public access is not intended
 - Configure exact CORS origins
 - Use HTTPS in production
+- Enable scheduler jobs with `SCHEDULER_ENABLED=true` only after SMTP and company/client email data are configured
+- Configure `MAX_UPLOAD_MB`, login lockout, and rate limit settings for your deployment
 - Prefer PostgreSQL for hosted multi-user deployment after migrating the repository layer from `sqlite3` to SQLAlchemy
 - Do not commit SQLite database, generated PDFs, uploaded logos, or backup zips
 - Revoke and rotate any GitHub or SMTP token that was accidentally printed or shared

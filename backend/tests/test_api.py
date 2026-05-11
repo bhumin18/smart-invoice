@@ -285,3 +285,43 @@ def test_admin_settings_and_email_verification(client):
     verified = client.post("/api/auth/verify-email", json={"token": token})
     assert verified.status_code == 200
     assert verified.get_json()["data"]["email_verified"] is True
+
+
+def test_security_scheduler_and_portal_review(client):
+    """Cover login activity, scheduler logs, public link revoke, and payment proof review."""
+    headers = _login(client)
+    invoice = client.post("/api/invoices", json=_invoice_payload(), headers=headers).get_json()["data"]
+
+    link = client.post(f"/api/invoices/{invoice['id']}/public-link", json={"expiry_days": 3}, headers=headers)
+    assert link.status_code == 200
+    assert link.get_json()["data"]["expires_at"]
+
+    proof = client.post(
+        f"/api/portal/{link.get_json()['data']['token']}/payment-proof",
+        data={"file": (BytesIO(b"paid"), "proof.pdf")},
+        content_type="multipart/form-data",
+    )
+    assert proof.status_code == 201
+
+    reviewed = client.post(
+        f"/api/invoices/{invoice['id']}/payment-proof/review",
+        json={"status": "approved"},
+        headers=headers,
+    )
+    assert reviewed.status_code == 200
+    assert reviewed.get_json()["data"]["payment_proof_status"] == "approved"
+
+    revoked = client.delete(f"/api/invoices/{invoice['id']}/public-link", headers=headers)
+    assert revoked.status_code == 200
+    public_after_revoke = client.get(f"/api/portal/{link.get_json()['data']['token']}")
+    assert public_after_revoke.status_code == 404
+
+    jobs = client.post("/api/jobs/run", headers=headers)
+    assert jobs.status_code == 200
+    job_status = client.get("/api/jobs", headers=headers)
+    assert job_status.status_code == 200
+    assert isinstance(job_status.get_json()["data"]["logs"], list)
+
+    overview = client.get("/api/users/admin/overview", headers=headers)
+    assert overview.status_code == 200
+    assert isinstance(overview.get_json()["data"]["login_activity"], list)

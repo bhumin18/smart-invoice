@@ -6,7 +6,9 @@ from pathlib import Path
 from typing import Any
 
 from models.audit_model import get_audit_logs
-from models.invoice_model import get_invoices
+from models.invoice_model import get_all_invoice_attachments, get_invoices, get_public_link_invoices
+from models.job_model import list_job_logs
+from models.security_model import list_auth_events
 from models.settings_model import registration_enabled, set_setting
 from models.user_model import list_users
 from services.auth_service import require_admin
@@ -40,6 +42,10 @@ def get_admin_overview(current_user: dict[str, Any]) -> dict[str, Any]:
         },
         "invoices_by_user": invoice_counts,
         "recent_activity": get_audit_logs(include_all=True, limit=25),
+        "login_activity": list_auth_events(25),
+        "job_logs": list_job_logs(25),
+        "public_links": get_public_link_invoices(25),
+        "uploads": get_all_invoice_attachments(25),
     }
 
 

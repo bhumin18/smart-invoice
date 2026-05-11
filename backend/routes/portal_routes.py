@@ -10,6 +10,9 @@ from services.portal_service import (
     create_or_get_public_link,
     generate_public_invoice_pdf,
     get_public_invoice,
+    review_payment_proof,
+    revoke_public_link,
+    save_client_message,
     upload_invoice_attachment,
     upload_payment_proof,
 )
@@ -24,13 +27,50 @@ logger = logging.getLogger(__name__)
 def invoice_public_link_route(invoice_id: int):
     """Create or return a public portal link for one invoice."""
     try:
-        link = create_or_get_public_link(invoice_id, getattr(g, "current_user", {}) or {})
+        payload = request.get_json(silent=True) or {}
+        link = create_or_get_public_link(
+            invoice_id,
+            getattr(g, "current_user", {}) or {},
+            int(payload.get("expiry_days") or 0) or None,
+        )
         if link is None:
             return api_response(False, {}, "Invoice not found", 404)
         return api_response(True, link, "Public link fetched successfully")
     except Exception as exc:
         logger.exception("Public link generation failed")
         return api_response(False, {}, "Failed to create public link", 500, {"error": str(exc)})
+
+
+@portal_bp.delete("/api/invoices/<int:invoice_id>/public-link")
+def invoice_public_link_revoke_route(invoice_id: int):
+    """Revoke a public portal link for one invoice."""
+    try:
+        invoice = revoke_public_link(invoice_id, getattr(g, "current_user", {}) or {})
+        if invoice is None:
+            return api_response(False, {}, "Invoice not found", 404)
+        return api_response(True, invoice, "Public link revoked successfully")
+    except Exception as exc:
+        logger.exception("Public link revoke failed")
+        return api_response(False, {}, "Failed to revoke public link", 500, {"error": str(exc)})
+
+
+@portal_bp.post("/api/invoices/<int:invoice_id>/payment-proof/review")
+def payment_proof_review_route(invoice_id: int):
+    """Approve or reject a client uploaded payment proof."""
+    try:
+        invoice = review_payment_proof(
+            invoice_id,
+            str((request.get_json(silent=True) or {}).get("status", "")),
+            getattr(g, "current_user", {}) or {},
+        )
+        if invoice is None:
+            return api_response(False, {}, "Invoice not found", 404)
+        return api_response(True, invoice, "Payment proof reviewed successfully")
+    except ValidationError as exc:
+        return api_response(False, {}, exc.message, 400, exc.errors)
+    except Exception as exc:
+        logger.exception("Payment proof review failed")
+        return api_response(False, {}, "Failed to review payment proof", 500, {"error": str(exc)})
 
 
 @portal_bp.post("/api/invoices/<int:invoice_id>/attachments")
@@ -84,3 +124,18 @@ def public_payment_proof_route(token: str):
     except Exception as exc:
         logger.exception("Payment proof upload failed")
         return api_response(False, {}, "Failed to upload payment proof", 500, {"error": str(exc)})
+
+
+@portal_bp.post("/api/portal/<token>/message")
+def public_message_route(token: str):
+    """Save a message from the invoice client portal."""
+    try:
+        result = save_client_message(token, str((request.get_json(silent=True) or {}).get("message", "")))
+        if result is None:
+            return api_response(False, {}, "Invoice not found", 404)
+        return api_response(True, result, "Message sent successfully", 201)
+    except ValidationError as exc:
+        return api_response(False, {}, exc.message, 400, exc.errors)
+    except Exception as exc:
+        logger.exception("Client portal message failed")
+        return api_response(False, {}, "Failed to send message", 500, {"error": str(exc)})

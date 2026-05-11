@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { Download, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { api, formatINR } from "@/lib/api";
@@ -8,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Table,
   TableBody,
@@ -23,6 +25,7 @@ export const Route = createFileRoute("/portal/$token")({
 
 function ClientPortalPage() {
   const { token } = Route.useParams();
+  const [message, setMessage] = useState("");
   const invoice = useQuery({
     queryKey: ["public-invoice", token],
     queryFn: () => api.getPublicInvoice(token),
@@ -30,7 +33,19 @@ function ClientPortalPage() {
   });
   const uploadProof = useMutation({
     mutationFn: (file: File) => api.uploadPaymentProof(token, file),
-    onSuccess: () => toast.success("Payment proof uploaded"),
+    onSuccess: () => {
+      toast.success("Payment proof uploaded");
+      invoice.refetch();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const sendMessage = useMutation({
+    mutationFn: () => api.sendPortalMessage(token, message),
+    onSuccess: () => {
+      toast.success("Message sent");
+      setMessage("");
+      invoice.refetch();
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -139,8 +154,43 @@ function ClientPortalPage() {
               {uploadProof.isPending ? "Uploading..." : "Upload Payment Proof"}
             </Button>
           </div>
+          <Badge variant="secondary">Proof: {inv.paymentProofStatus || "not uploaded"}</Badge>
         </CardContent>
       </Card>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Payment Timeline</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {(inv.timeline || []).map((event, index) => (
+              <div key={index} className="rounded-md border px-3 py-2 text-sm">
+                <div className="font-medium">{event.label}</div>
+                <div className="text-xs text-muted-foreground">{event.date || "-"}</div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Message Business</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {inv.clientPortalMessage && (
+              <div className="rounded-md border bg-muted/30 p-3 text-sm">
+                <div className="mb-1 text-xs uppercase text-muted-foreground">Last message</div>
+                <div className="whitespace-pre-line">{inv.clientPortalMessage}</div>
+              </div>
+            )}
+            <Textarea rows={5} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Share payment details or questions about this invoice." />
+            <Button type="button" variant="outline" onClick={() => sendMessage.mutate()} disabled={sendMessage.isPending || !message.trim()}>
+              {sendMessage.isPending ? "Sending..." : "Send Message"}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
