@@ -29,7 +29,12 @@ import { FALLBACK_BRANDING } from "@/lib/app-signature";
 
 const items = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard, permission: "always" },
-  { title: "Create Invoice", url: "/invoices/new", icon: FilePlus2, permission: "canCreateInvoices" },
+  {
+    title: "Create Invoice",
+    url: "/invoices/new",
+    icon: FilePlus2,
+    permission: "canCreateInvoices",
+  },
   { title: "Invoices", url: "/invoices", icon: FileText, permission: "always" },
   { title: "Clients", url: "/clients", icon: Users, permission: "canCreateInvoices" },
   { title: "Products", url: "/products", icon: PackageSearch, permission: "canCreateInvoices" },
@@ -73,8 +78,12 @@ export function AppSidebar() {
           </div>
           {!collapsed && (
             <div className="flex flex-col leading-tight">
-              <span className="text-sm font-semibold">{branding.appName || FALLBACK_BRANDING.appName}</span>
-              <span className="text-[10px] text-muted-foreground uppercase tracking-wider">India</span>
+              <span className="text-sm font-semibold">
+                {branding.appName || FALLBACK_BRANDING.appName}
+              </span>
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                India
+              </span>
             </div>
           )}
         </Link>

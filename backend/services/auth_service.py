@@ -168,9 +168,14 @@ def register(payload: dict[str, Any]) -> dict[str, Any]:
     if email:
         token = secrets.token_urlsafe(32)
         set_verification_token(int(user["id"]), token)
+        verification_link = f"{str(get_config('auth.password_reset_url', 'http://localhost:5173')).rstrip('/')}/?verify_email={token}"
+        if bool(get_config("email.enabled", False)):
+            from services.email_service import send_email_verification_email
+
+            send_email_verification_email(user, verification_link)
         if str(get_config("app.environment", "development")).lower() != "production":
             result["verification_token"] = token
-            result["verification_link"] = f"{str(get_config('auth.password_reset_url', 'http://localhost:5173')).rstrip('/')}/?verify_email={token}"
+            result["verification_link"] = verification_link
     return result
 
 

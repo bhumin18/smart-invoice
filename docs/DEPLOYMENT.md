@@ -28,7 +28,7 @@ Backend start command:
 ```bash
 cd backend
 pip install -r requirements.txt
-python app.py
+gunicorn app:app --bind 0.0.0.0:$PORT
 ```
 
 Health check:
@@ -38,6 +38,7 @@ Health check:
 ```
 
 For Render/Railway, set the service root to `backend` or use the Dockerfile in `backend/Dockerfile`.
+`render.yaml` is included as a starter backend service definition.
 
 ## Frontend: Vercel/Netlify
 
@@ -54,6 +55,8 @@ Set:
 ```text
 VITE_API_BASE=https://your-backend-domain.com/api
 ```
+
+Starter `vercel.json` and `netlify.toml` files are included in `frontend/gst-gem-main/`.
 
 ## Docker
 

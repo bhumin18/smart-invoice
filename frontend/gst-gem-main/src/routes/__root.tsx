@@ -1,4 +1,11 @@
-import { Outlet, Link, createRootRouteWithContext, HeadContent, Scripts, useRouterState } from "@tanstack/react-router";
+import {
+  Outlet,
+  Link,
+  createRootRouteWithContext,
+  HeadContent,
+  Scripts,
+  useRouterState,
+} from "@tanstack/react-router";
 import { Moon, Sun } from "lucide-react";
 import type { FormEvent, ReactNode } from "react";
 import { useEffect, useState } from "react";
@@ -47,16 +54,33 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "GST Invoice Pro — India" },
-      { name: "description", content: "Modern GST invoicing for Indian freelancers and small businesses." },
+      {
+        name: "description",
+        content: "Modern GST invoicing for Indian freelancers and small businesses.",
+      },
       { property: "og:title", content: "GST Invoice Pro — India" },
-      { property: "og:description", content: "Modern GST invoicing for Indian freelancers and small businesses." },
+      {
+        property: "og:description",
+        content: "Modern GST invoicing for Indian freelancers and small businesses.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
       { name: "twitter:title", content: "GST Invoice Pro — India" },
-      { name: "twitter:description", content: "Modern GST invoicing for Indian freelancers and small businesses." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/bc5a27bc-934a-49a9-82e7-c69c9046df2f/id-preview-dd3b984e--e6bc349b-8365-4469-afde-1a1a55bba321.lovable.app-1777738344950.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/bc5a27bc-934a-49a9-82e7-c69c9046df2f/id-preview-dd3b984e--e6bc349b-8365-4469-afde-1a1a55bba321.lovable.app-1777738344950.png" },
+      {
+        name: "twitter:description",
+        content: "Modern GST invoicing for Indian freelancers and small businesses.",
+      },
+      {
+        property: "og:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/bc5a27bc-934a-49a9-82e7-c69c9046df2f/id-preview-dd3b984e--e6bc349b-8365-4469-afde-1a1a55bba321.lovable.app-1777738344950.png",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/bc5a27bc-934a-49a9-82e7-c69c9046df2f/id-preview-dd3b984e--e6bc349b-8365-4469-afde-1a1a55bba321.lovable.app-1777738344950.png",
+      },
     ],
     links: [
       {
@@ -234,7 +258,11 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
       } else if (mode === "forgot") {
         const result = await api.forgotPassword(email || username);
         setResetToken(result.reset_token || "");
-        setNotice(result.reset_token ? "Reset token generated below." : "If the account exists, reset instructions were created.");
+        setNotice(
+          result.reset_token
+            ? "Reset token generated below."
+            : "If the account exists, reset instructions were created.",
+        );
         setMode("reset");
       } else {
         await api.resetPassword(resetToken, password);
@@ -262,20 +290,33 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle>{title}</CardTitle>
-          <p className="text-sm text-muted-foreground">Access invoices and company data securely.</p>
+          <p className="text-sm text-muted-foreground">
+            Access invoices and company data securely.
+          </p>
         </CardHeader>
         <CardContent>
           <form onSubmit={submit} className="space-y-4">
             {mode !== "forgot" && mode !== "reset" && (
               <div className="space-y-2">
                 <Label htmlFor="login-username">Username</Label>
-                <Input id="login-username" value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" />
+                <Input
+                  id="login-username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  autoComplete="username"
+                />
               </div>
             )}
             {mode === "register" && (
               <div className="space-y-2">
                 <Label htmlFor="login-email">Email</Label>
-                <Input id="login-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
+                <Input
+                  id="login-email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
+                />
               </div>
             )}
             {mode === "forgot" && (
@@ -292,8 +333,16 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
             )}
             {mode !== "forgot" && (
               <div className="space-y-2">
-                <Label htmlFor="login-password">{mode === "reset" ? "New Password" : "Password"}</Label>
-                <Input id="login-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete={mode === "login" ? "current-password" : "new-password"} />
+                <Label htmlFor="login-password">
+                  {mode === "reset" ? "New Password" : "Password"}
+                </Label>
+                <Input
+                  id="login-password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete={mode === "login" ? "current-password" : "new-password"}
+                />
               </div>
             )}
             {error && <p className="text-sm text-destructive">{error}</p>}
@@ -302,10 +351,26 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
               {loading ? "Working..." : title}
             </Button>
             <div className="flex flex-wrap justify-center gap-3 text-xs">
-              {mode !== "login" && <button type="button" className="text-primary" onClick={() => setMode("login")}>Login</button>}
-              {mode !== "register" && <button type="button" className="text-primary" onClick={() => setMode("register")}>Create account</button>}
-              {mode !== "forgot" && <button type="button" className="text-primary" onClick={() => setMode("forgot")}>Forgot password</button>}
-              {mode !== "reset" && <button type="button" className="text-primary" onClick={() => setMode("reset")}>Use reset token</button>}
+              {mode !== "login" && (
+                <button type="button" className="text-primary" onClick={() => setMode("login")}>
+                  Login
+                </button>
+              )}
+              {mode !== "register" && (
+                <button type="button" className="text-primary" onClick={() => setMode("register")}>
+                  Create account
+                </button>
+              )}
+              {mode !== "forgot" && (
+                <button type="button" className="text-primary" onClick={() => setMode("forgot")}>
+                  Forgot password
+                </button>
+              )}
+              {mode !== "reset" && (
+                <button type="button" className="text-primary" onClick={() => setMode("reset")}>
+                  Use reset token
+                </button>
+              )}
             </div>
             <p className="text-xs text-muted-foreground">
               Default local credentials: admin / admin123. Change them in backend/config.yaml.
